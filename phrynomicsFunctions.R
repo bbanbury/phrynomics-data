@@ -32,6 +32,18 @@ deleteData <- function(data, type=NULL, taxa=NULL, percent=0.4){
   return(as.data.frame(data, stringsAsFactors=FALSE))
 }
 
+addInvariantData <- function(snpDataset, nsites){
+#this function will add in nsites of invariabt data
+#it will add an even amount of each base
+  if(class(snpDataset) == "snp")
+    snpDataset <- snpDataset$data
+  ncols <- floor(nsites/4)
+  bases <- c("A", "T", "C", "G")
+  for(i in sequence(length(bases))){
+    snpDataset <- cbind(snpDataset, matrix(rep(bases[i], ncols*dim(snpDataset)[1]), ncol=ncols))
+  }  
+  return(snpDataset)  
+}
 
 append.MrBayes <- function(file, data=c("snps", "full"), type=c("asc, nonasc"), nst=NULL){
   f <- file

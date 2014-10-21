@@ -109,7 +109,7 @@ for(i in sequence(length(varsims))){
 }
 save(randomMD, cdMD, file="missingData.Rdata")
 
-full.randomMD <- list()
+full.randomMD <- list()  #This one uses original simulation data
 full.cdMD <- list()
 for(i in sequence(length(fullsims))){
   if(i%%10 == 0)
@@ -119,30 +119,41 @@ for(i in sequence(length(fullsims))){
 }
 save(full.randomMD, full.cdMD, file="full.missingData.Rdata")
 
+full.randomMD <- list()  #This adds invariant sites to variable site data
+full.cdMD <- list()
+for(i in sequence(length(randomMD))){
+  if(i%%10 == 0)
+    print(i)
+  full.randomMD[[i]] <- addInvariantData(randomMD[[i]], 11600)
+  full.cdMD[[i]] <- addInvariantData(cdMD[[i]], 11600)
+}
+save(full.randomMD, full.cdMD, file="full.missingData.Rdata")
+
 
 ##  ----------------------------------------  ##
 ##           Missing Data Analyses            ##
 ##  ----------------------------------------  ##
 
-write("", file="invocations.md.txt")
+write("", file="random.invocations.md.txt")
 for(i in sequence(length(randomMD))){
   WriteSNP(randomMD[[i]], file="randMD.sim", format="phylip")
   run <- paste("raxmlHPC-PTHREADS -T 6 -s randMD.sim -m ASC_GTRCAT -V -p ", floor(runif(1, min=1, max=10^6)), " -n randMD.asc", i, sep="")
-  write(run, file="invocations.md.txt", append=TRUE)
+  write(run, file="random.invocations.md.txt", append=TRUE)
   system(command=run)
   run <- paste("raxmlHPC-PTHREADS -T 6 -s randMD.sim -m GTRCAT -V -p ", floor(runif(1, min=1, max=10^6)), " -n randMD.nonasc", i, sep="")
-  write(run, file="invocations.md.txt", append=TRUE)
+  write(run, file="random.invocations.md.txt", append=TRUE)
   system(command=run)
   if(i %% 10 == 0)
     print(paste(i, "of 1000"))
 }
+write("", file="cd.invocations.md.txt")
 for(i in sequence(length(cdMD))){
   WriteSNP(cdMD[[i]], file="cdMD.sim", format="phylip")
   run <- paste("raxmlHPC-PTHREADS -T 6 -s cdMD.sim -m ASC_GTRCAT -V -p ", floor(runif(1, min=1, max=10^6)), " -n cdMD.asc", i, sep="")
-  write(run, file="invocations.md.txt", append=TRUE)
+  write(run, file="cd.invocations.md.txt", append=TRUE)
   system(command=run)
   run <- paste("raxmlHPC-PTHREADS -T 6 -s cdMD.sim -m GTRCAT -V -p ", floor(runif(1, min=1, max=10^6)), " -n cdMD.nonasc", i, sep="")
-  write(run, file="invocations.md.txt", append=TRUE)
+  write(run, file="cd.invocations.md.txt", append=TRUE)
   system(command=run)
   if(i %% 10 == 0)
     print(paste(i, "of 1000"))
@@ -150,10 +161,10 @@ for(i in sequence(length(cdMD))){
 write("", file="full.invocations.md.txt")
 for(i in sequence(length(full.randomMD))){
   WriteSNP(full.randomMD[[i]], file="full.randomMD.sim", format="phylip")
-  WriteSNP(full.cdMD[[i]], file="full.cdMD.sim", format="phylip")
   run <- paste("raxmlHPC-PTHREADS -T 6 -s full.randomMD.sim -m GTRCATI -p ", floor(runif(1, min=1, max=10^6)), " -n randomMD.full", i, sep="")
   write(run, file="full.invocations.md.txt", append=TRUE)
   system(command=run)
+  WriteSNP(full.cdMD[[i]], file="full.cdMD.sim", format="phylip")
   run <- paste("raxmlHPC-PTHREADS -T 6 -s full.cdMD.sim -m GTRCATI -p ", floor(runif(1, min=1, max=10^6)), " -n cdMD.full", i, sep="")
   write(run, file="full.invocations.md.txt", append=TRUE)
   system(command=run)
