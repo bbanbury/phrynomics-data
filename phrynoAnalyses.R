@@ -13,6 +13,7 @@ mainDir <- "/Users/Barb/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper"
 phrynoDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/phrynoRuns/"
 RepDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/RepeatRuns/"
 SimDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/Simulation/"
+FigDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/FULLfigs"
 
 setwd(mainDir)
 source("~/phrynomics-data/trunk/phrynomicsFunctions.R")
@@ -29,6 +30,7 @@ files <- system("ls c*noAmbigs.snps", intern=T)
 analysis <- "RAxML"
 RAxML.trees <- system("ls RAxML_bipartitions.*", intern=T)  #trees with bootstraps
 RAxML.TreeList <- CreateTreeList(RAxML.trees, "RAxML")
+RAxML.TreeList <- lapply(RAxML.TreeList, ladderize)
 ML.results <- GetRAxMLStatsPostAnalysis(".")
 
 treeMatrix <- CreateTreeMatrix(RAxML.trees)
@@ -58,6 +60,7 @@ analysis <- "MrBayes"
 MrBayes.trees <- system(paste("ls *.con.tre", sep=""), intern=T)  
 MrBayes.TreeList <- CreateTreeList(MrBayes.trees, "MrBayes")
 MrBayes.TreeList <- lapply(MrBayes.TreeList, multi2di)  #remove later
+MrBayes.TreeList <- lapply(MrBayes.TreeList, ladderize)  #remove later
 MB.results <- GetMrBayesStatsPostAnalysis(".")  #will be warnings, because of missing analyses
 
 treeMatrix <- CreateTreeMatrix(MrBayes.trees)
@@ -81,12 +84,10 @@ for(i in sequence(dim(MB.ascfull.treeMatrix)[1])) {
     names(MB.ascfull.BL.AllTrees)[[i]] <- rownames(treeMatrix)[i]
   }
 }
-MB.ascfull.BL.AllTrees <- MB.ascfull.BL.AllTrees[-c(which(names(MB.ascfull.BL.AllTrees) == "" ), which(is.na(names(MB.ascfull.BL.AllTrees))))]  #remove analyses that didn't finish (c5 and c10)
+#MB.ascfull.BL.AllTrees <- MB.ascfull.BL.AllTrees[-c(which(names(MB.ascfull.BL.AllTrees) == "" ), which(is.na(names(MB.ascfull.BL.AllTrees))))]  #remove analyses that didn't finish (c5 and c10)
 
 
 #  Create global objects for tables and figs to be made
-
-setwd(mainDir)
 
 s <- "(A:0.2, B:0.05, (C:0.2, D:0.05)X:0.05);"
 simTree <- read.tree(text=s)
@@ -117,6 +118,7 @@ if(comp == "FULLASC"){
   treeMatrices <- list(ascfull.treeMatrix, MB.ascfull.treeMatrix)
 }
 
+setwd(mainDir)
 save.image(file="phrynoWorkspace.Rdata")
 
 ##  ----------------------------------------  ##
@@ -377,6 +379,7 @@ write.table(table5, file="table5.txt", quote=FALSE, sep=" & ")
 
 #  Make Figure 2. Acquisition bias and tree length
 
+setwd(FigDir)
 pdf(file="Figure2.pdf", width=5, height=8.5)
 layout(matrix(1:2, nrow=2, byrow=TRUE), respect=TRUE)
 gtrcol <- "black"
@@ -402,39 +405,33 @@ for(i in sequence(length(orderToGo))){
   points(orderedLevels[i], ML.results$TreeLength[dataToUse[2]], pch=21, bg=gtrpoint)
   points(orderedLevels[i], ML.results$TreeLength[dataToUse[3]], pch=21, bg=fulpoint)
 }
-Ymin <- min(MB.results$TreeLength.lowCI)
-Ymax <- max(MB.results$TreeLength.uppCI)
-plot(c(orderedLevels, orderedLevels), MB.results$TreeLength, type="n", ylab="Tree Length", xlab="Missing Data", ylim=c(Ymin, Ymax))
+Ymin <- min(MB.results$TreeLength.lowCI, na.rm=TRUE)
+Ymax <- max(MB.results$TreeLength.uppCI, na.rm=TRUE)
+plot(rep(orderedLevels, 3), MB.results$TreeLength, type="n", ylab="Tree Length", xlab="Missing Data", ylim=c(Ymin, Ymax))
 title(main="MrBayes")
-legend("topright", legend=c("Uncorrected", "Corrected", "All Sites"), col=c("black", "gray", "black"), lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
+legend("topright", legend=c("Uncorrected", "Corrected", "All Sites"), col=c(gtrcol, asccol, fulcol), lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
 for(i in sequence(length(orderToGo)-1)){ 
   dataToUse <- which(orderToGo[i] == MB.results$Level)
   nextDataToUse <- which(orderToGo[i+1] == MB.results$Level)
   segments(orderedLevels[i], MB.results$TreeLength[dataToUse[1]], orderedLevels[i+1], MB.results$TreeLength[nextDataToUse[1]], col=asccol)
   segments(orderedLevels[i], MB.results$TreeLength[dataToUse[2]], orderedLevels[i+1], MB.results$TreeLength[nextDataToUse[2]], col=gtrcol)  
-}
-for(i in sequence(length(orderToGo)-1)){ #mrbayes full
-  dataToUse <- which(orderToGo[i] == MB.results.full$Level)
-  nextDataToUse <- which(orderToGo[i+1] == MB.results.full$Level)
-  segments(orderedLevels[i], MB.results.full$TreeLength[dataToUse[1]], orderedLevels[i+1], MB.results.full$TreeLength[nextDataToUse[1]], col=fulcol)
+  segments(orderedLevels[i], MB.results$TreeLength[dataToUse[3]], orderedLevels[i+1], MB.results$TreeLength[nextDataToUse[3]], col=fulcol)  
 }
 for(i in sequence(length(orderToGo))){
   dataToUse <- which(orderToGo[i] == MB.results$Level)
   arrows(orderedLevels[i], MB.results$TreeLength.lowCI[dataToUse[1]], orderedLevels[i], MB.results$TreeLength.uppCI[dataToUse[1]], code=3, length=0.05, col=asccol, angle=90)
   arrows(orderedLevels[i], MB.results$TreeLength.lowCI[dataToUse[2]], orderedLevels[i], MB.results$TreeLength.uppCI[dataToUse[2]], code=3, length=0.05, col=gtrcol, angle=90)
+  arrows(orderedLevels[i], MB.results$TreeLength.lowCI[dataToUse[3]], orderedLevels[i], MB.results$TreeLength.uppCI[dataToUse[3]], code=3, length=0.05, col=fulcol, angle=90)
   points(orderedLevels[i], MB.results$TreeLength[dataToUse[1]], pch=21, bg=ascpoint)
   points(orderedLevels[i], MB.results$TreeLength[dataToUse[2]], pch=21, bg=gtrpoint)
-}
-for(i in sequence(length(orderToGo))){
-  dataToUse <- which(orderToGo[i] == MB.results.full$Level)
-  arrows(orderedLevels[i], MB.results.full$TreeLength.lowCI[dataToUse[1]], orderedLevels[i], MB.results.full$TreeLength.uppCI[dataToUse[1]], code=3, length=0.05, col=fulcol, angle=90)
-  points(orderedLevels[i], MB.results.full$TreeLength[dataToUse[1]], pch=21, bg=fulpoint)
+  points(orderedLevels[i], MB.results$TreeLength[dataToUse[3]], pch=21, bg=fulpoint)
 }
 dev.off()
 
 
 #  Make Figure 3. Scatterplot branch lengths
 
+setwd(FigDir)
 usr2dev <- function(x) 180/pi*atan(x*diff(par("usr")[1:2])/diff(par("usr")[3:4]))
 getX <- function(y, linmod) (y-linmod$coefficients[1])/linmod$coefficients[2]  #(y -b)/m = x
 pdf(file="Figure3.pdf", width=8.5, height=5)
@@ -448,17 +445,21 @@ for(anal in 1:length(analyses)){
     BL.AllTrees <- BL.AllTrees.MrBayes
   for(i in sequence(length(whichFocalDatasets))){
     dataToUse <- which(whichFocalDatasets[i] == names(BL.AllTrees))
-    BLs <- BL.AllTrees[[dataToUse]]$branchlength[which(BL.AllTrees[[dataToUse]]$present)]
-    corr.BLs <- BL.AllTrees[[dataToUse]]$corr.BL[which(BL.AllTrees[[dataToUse]]$present)]
-    plot(BLs, corr.BLs, pch=21, bg="gray", ylim=c(0, 0.22), xlim=c(0, 0.22), xlab="ASC", ylab="non-ASC", type="n")
-    linmod <- lm(corr.BLs ~ BLs)
-    abline(linmod, lty=2)
-    y <- 0.18
-    points(getX(y, linmod), y, col="white", pch=21, bg="white", cex=12, crt=usr2dev(linmod$coefficients[2]))
-    points(BLs, corr.BLs, pch=21, bg="gray")
-    text(x=getX(y, linmod), y=y, paste("m =", round(linmod$coefficients[2], digits=2)), srt=usr2dev(linmod$coefficients[2]))
-    lines(c(-1,1), c(-1,1))
-    title(main=paste("s", strsplit(whichDatasets[[i]], "\\D")[[1]][2], sep=""))
+    if(length(dataToUse) == 0)
+      plot(1:10, 1:10, type="n", axes=FALSE, frame.plot=FALSE, ylab="", xlab="")
+    else {
+      BLs <- BL.AllTrees[[dataToUse]]$branchlength[which(BL.AllTrees[[dataToUse]]$present)]
+      corr.BLs <- BL.AllTrees[[dataToUse]]$corr.BL[which(BL.AllTrees[[dataToUse]]$present)]
+      plot(BLs, corr.BLs, pch=21, bg="gray", ylim=c(0, 0.22), xlim=c(0, 0.22), xlab="ASC", ylab="non-ASC", type="n")
+      linmod <- lm(corr.BLs ~ BLs)
+      abline(linmod, lty=2)
+      y <- 0.18
+      points(getX(y, linmod), y, col="white", pch=21, bg="white", cex=12, crt=usr2dev(linmod$coefficients[2]))
+      points(BLs, corr.BLs, pch=21, bg="gray")
+      text(x=getX(y, linmod), y=y, paste("m =", round(linmod$coefficients[2], digits=2)), srt=usr2dev(linmod$coefficients[2]))
+      lines(c(-1,1), c(-1,1))
+      title(main=paste("s", strsplit(whichFocalDatasets[[i]], "\\D")[[1]][2], sep=""))
+    }
   }
 }
 dev.off()
@@ -466,6 +467,7 @@ dev.off()
 
 #  Figure 4 parts. Colored branch SNP phylogenies
 
+setwd(FigDir)
 figIndex <- 0
 for(anal in 1:length(analyses)){
   whichAnalysis <- analyses[anal] 
@@ -481,33 +483,34 @@ for(anal in 1:length(analyses)){
     pdf(file=paste(whichAnalysis, ".", orderToGo[i], "trees.pdf", sep=""), width=8.5, height=11)
     figIndex <- figIndex+1
     dataToUse <- which(rownames(treeMatrices[[anal]]) == orderToGo[i])
-    tree1 <- assTrees(treeMatrices[[anal]][dataToUse,1], TreeList)[[1]]
-    #tree1$tip.label[which(tree1$tip.label == "UMNO1")] <- "CADR2"  #change taxon
-    #tree1$tip.label[which(tree1$tip.label == "PHCO1")] <- "PHCE5"  #change taxon
-    #tree1$tip.label[which(tree1$tip.label == "PHCO3")] <- "PHCE6"  #change taxon
-    tree2 <- assTrees(treeMatrices[[anal]][dataToUse,2], TreeList)[[1]]
-    #tree2$tip.label[which(tree2$tip.label == "UMNO1")] <- "CADR2" #change taxon in tree2
-    #tree2$tip.label[which(tree2$tip.label == "PHCO1")] <- "PHCE5" #change taxon in tree2
-    #tree2$tip.label[which(tree2$tip.label == "PHCO3")] <- "PHCE6" #change taxon in tree2
-    plot(tree1, edge.lty=BL.AllTrees[[dataToUse]]$edgelty, edge.color=BL.AllTrees[[dataToUse]]$edgeColor, cex=0.5, edge.width=2)
-    legtxt <- c("Discordant", "< -10%", "-10% to 10%", "> 10%", "> 20%", "> 30%", "> 40%", "> 50%")
-    legcolors <- c("gray", rgb(51,51,255, max=255), "gray", rgb(255,255,102, max=255), rgb(255,178,102, max=255), rgb(225,128,0, max=255), rgb(225,0,0, max=255), rgb(153,0,0, max=255))
-    legend("bottomleft", legend=legtxt, col=legcolors, lty=c(2,rep(1,7)), lwd=2, merge = TRUE, bty="n", xjust=1, inset=0.02, cex=0.75, title=expression(underline("Branchlength Difference"))) 
-    nodelabels(text=BL.AllTrees[[dataToUse]]$support[which(BL.AllTrees[[dataToUse]]$class == "internal")], node=BL.AllTrees[[dataToUse]]$desc[which(BL.AllTrees[[dataToUse]]$class == "internal")], cex=0.5, col="black", bg="white", frame="none", adj=c(1.1, -0.1))
-    nodelabels(text=BL.AllTrees[[dataToUse]]$corr.support[which(BL.AllTrees[[dataToUse]]$class == "internal")], node=BL.AllTrees[[dataToUse]]$desc[which(BL.AllTrees[[dataToUse]]$class == "internal")], cex=0.5, col="black", bg="white", frame="none", adj=c(1.1, 1.1))
-    if(whichAnalysis == "RAxML"){
-      bquote1 <- bquote(bold("Supplemental Figure S" * .(as.character(figIndex)) * ".") * " Maximum likelihood phylogeny for the ascertainment-corrected dataset s" * .(strsplit(orderToGo[i], "\\D")[[1]][2]) ~ "(" * .(makeNumberwithcommas(ML.results[which(ML.results$Level == orderToGo[i]), 4][1])) ~ "variable sites," ~ "\n" )
-      bquote2 <- bquote(.(unique(ML.results[which(ML.results$Level == orderToGo[i]), 6])) * "% missing data). Bootstrap values are shown on nodes (ascertainment-corrected above, no correction below). Branch")
-      bquote3 <- bquote("color coding reflects the degree of relative length difference between ascertainment and non-ascertainment estimates.")
-    }
-    if(whichAnalysis == "MrBayes"){
-      bquote1 <- bquote(bold("Supplemental Figure S" * .(as.character(figIndex)) * ".") * " Bayesian consensus phylogeny for the ascertainment-corrected dataset s" * .(strsplit(orderToGo[i], "\\D")[[1]][2]) ~ "(" * .(makeNumberwithcommas(MB.results[which(MB.results$Level == orderToGo[i]), 4][1])) ~ "variable sites," ~ "\n" )
-      bquote2 <- bquote(.(unique(MB.results[which(MB.results$Level == orderToGo[i]), 6])) * "% missing data). Posterior probability values are shown on nodes (ascertainment-corrected above, no correction below). Branch")
-      bquote3 <- bquote("color coding reflects the degree of relative length difference between ascertainment and non-ascertainment estimates.")
-    }
-    mtext(bquote1, side=3, cex=.75, adj=c(0), line=2)
-    mtext(bquote2, side=3, cex=.75, adj=c(0), line=1)
-    mtext(bquote3, side=3, cex=.75, adj=c(0), line=0)
+    if(length(grep("NA", treeMatrices[[anal]][dataToUse,1])) > 0)
+      plot(1:10, 1:10, type="n", axes=FALSE, frame.plot=FALSE, ylab="", xlab="")
+    else {
+      tree1 <- assTrees(treeMatrices[[anal]][dataToUse,1], TreeList)[[1]]
+  print(is.rooted(tree1))
+      tree2 <- assTrees(treeMatrices[[anal]][dataToUse,2], TreeList)[[1]]
+      edgeColors <- BL.AllTrees[[dataToUse]]$edgeColor
+      edgeColors[which(is.na(edgeColors))] <- rep("gray", length(which(is.na(edgeColors))))
+      plot(tree1, edge.lty=BL.AllTrees[[dataToUse]]$edgelty, edge.color= edgeColors, cex=0.5, edge.width=2)
+      legtxt <- c("Discordant", "< -10%", "-10% to 10%", "> 10%", "> 20%", "> 30%", "> 40%", "> 50%")
+      legcolors <- c("gray", rgb(51,51,255, max=255), "gray", rgb(255,255,102, max=255), rgb(255,178,102, max=255), rgb(225,128,0, max=255), rgb(225,0,0, max=255), rgb(153,0,0, max=255))
+      legend("bottomleft", legend=legtxt, col=legcolors, lty=c(2,rep(1,7)), lwd=2, merge = TRUE, bty="n", xjust=1, inset=0.02, cex=0.75, title=expression(underline("Branchlength Difference"))) 
+      nodelabels(text=BL.AllTrees[[dataToUse]]$support[which(BL.AllTrees[[dataToUse]]$class == "internal")], node=BL.AllTrees[[dataToUse]]$desc[which(BL.AllTrees[[dataToUse]]$class == "internal")], cex=0.5, col="black", bg="white", frame="none", adj=c(1.1, -0.1))
+      nodelabels(text=BL.AllTrees[[dataToUse]]$corr.support[which(BL.AllTrees[[dataToUse]]$class == "internal")], node=BL.AllTrees[[dataToUse]]$desc[which(BL.AllTrees[[dataToUse]]$class == "internal")], cex=0.5, col="black", bg="white", frame="none", adj=c(1.1, 1.1))
+      if(whichAnalysis == "RAxML"){
+        bquote1 <- bquote(bold("Supplemental Figure S" * .(as.character(figIndex)) * ".") * " Maximum likelihood phylogeny for the ascertainment-corrected dataset s" * .(strsplit(orderToGo[i], "\\D")[[1]][2]) ~ "(" * .(makeNumberwithcommas(ML.results[which(ML.results$Level == orderToGo[i]), 4][1])) ~ "variable sites," ~ "\n" )
+        bquote2 <- bquote(.(unique(ML.results[which(ML.results$Level == orderToGo[i]), 6])) * "% missing data). Bootstrap values are shown on nodes (ascertainment-corrected above, no correction below). Branch")
+        bquote3 <- bquote("color coding reflects the degree of relative length difference between ascertainment and non-ascertainment estimates.")
+      }
+      if(whichAnalysis == "MrBayes"){
+        bquote1 <- bquote(bold("Supplemental Figure S" * .(as.character(figIndex)) * ".") * " Bayesian consensus phylogeny for the ascertainment-corrected dataset s" * .(strsplit(orderToGo[i], "\\D")[[1]][2]) ~ "(" * .(makeNumberwithcommas(MB.results[which(MB.results$Level == orderToGo[i]), 4][1])) ~ "variable sites," ~ "\n" )
+        bquote2 <- bquote(.(unique(MB.results[which(MB.results$Level == orderToGo[i]), 6])) * "% missing data). Posterior probability values are shown on nodes (ascertainment-corrected above, no correction below). Branch")
+        bquote3 <- bquote("color coding reflects the degree of relative length difference between ascertainment and non-ascertainment estimates.")
+      }
+      mtext(bquote1, side=3, cex=.75, adj=c(0), line=2)
+      mtext(bquote2, side=3, cex=.75, adj=c(0), line=1)
+      mtext(bquote3, side=3, cex=.75, adj=c(0), line=0)
+  }
     dev.off()
   }
 }
