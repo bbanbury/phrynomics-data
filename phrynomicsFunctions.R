@@ -582,25 +582,28 @@ GetLinesToSkip <- function(file){
   return(length(suppressWarnings(system(paste("grep 'ID:' ", file, sep=""), intern=TRUE))))
 }
 
-GetMrBayesStatsPostAnalysis <- function(workingDirectoryOfResults, is.full=FALSE){
+GetMrBayesStatsPostAnalysis <- function(workingDirectoryOfResults){
   startingDir <- getwd()
   setwd(workingDirectoryOfResults)
-  nexFiles <- system("ls *.nex", intern=TRUE)  #num loci
-  if(is.full)
-    nexFiles <- system("ls c*.nex", intern=TRUE)  #num loci
+  vFiles <- system("ls *noAmbigs.nex", intern=TRUE)  #num loci
+  cFiles <- system("ls c*3.nex", intern=TRUE)  #num loci
+  nexFiles <- c(vFiles, cFiles)
   pstatFiles <- system("ls *.pstat", intern=TRUE)  #tree length and alpha
   logFiles <- system("ls *log*", intern=TRUE)  
   results <- matrix(nrow=length(nexFiles), ncol=12)
   for(i in sequence(length(nexFiles))){
     MissingDataLevel <- paste("c", strsplit(nexFiles[i], "\\D+")[[1]][2], "p3", sep="")
     whichModel <- strsplit(nexFiles[i], "_")[[1]][1]
-    if(is.full)
+    if(length(grep("noAmbigs", nexFiles[i])) == 0)
       whichModel <- "full"
     numLociLine <- system(paste("grep DIMENSIONS", nexFiles[i]), intern=TRUE)
     numberLoci <- strsplit(numLociLine, "\\D+")[[1]][3]
-    dataName <- paste(whichModel, "_c", strsplit(nexFiles[i], "\\D+")[[1]][2], "p3", sep="")
-    if(is.full)
-      dataName <- paste("c", strsplit(nexFiles[i], "\\D+")[[1]][2], "p3", sep="")
+    datName <- paste0(whichModel, "_c", strsplit(nexFiles[i], "\\D+")[[1]][2], "p3")
+    dataName <- paste0("^", datName)
+    if(length(grep("noAmbigs", nexFiles[i])) == 0){
+      datName <- paste0("c", strsplit(nexFiles[i], "\\D+")[[1]][2], "p3")
+      dataName <- paste0("^", datName)
+    }
     if(length(pstatFiles[grep(dataName, pstatFiles)]) > 0) {
       pstats <- read.csv(pstatFiles[grep(dataName, pstatFiles)], sep="", skip=GetLinesToSkip(pstatFiles[grep(dataName, pstatFiles)]))
     }
@@ -615,7 +618,8 @@ GetMrBayesStatsPostAnalysis <- function(workingDirectoryOfResults, is.full=FALSE
     alpha.lowCI <- pstats[2,4]
     alpha.uppCI <- pstats[2,5]
     alphaESS <- pstats[2,8]
-    stdSplitLine <- system(paste("grep -A 1 'Summary statistics for partitions with frequency' ", logFiles[grep(dataName, logFiles)], sep=""), intern=T)[2]
+    splitgrep <- paste0("log", datName)
+    stdSplitLine <- system(paste("grep -A 1 'Summary statistics for partitions with frequency' ", logFiles[grep(splitgrep, logFiles)], sep=""), intern=T)[2]
     stdSplits <- gsub("          Average standard deviation of split frequencies = ", "", stdSplitLine)
     results[i,] <- c(MissingDataLevel, whichModel, numberLoci, treelength, treelength.lowCI, treelength.uppCI, treelengthESS, alpha, alpha.lowCI, alpha.uppCI, alphaESS, stdSplits)
   }  
