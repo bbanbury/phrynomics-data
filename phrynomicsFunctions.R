@@ -121,15 +121,21 @@ CreateTreeList <- function(filenames, analysis="RAxML"){
 
 CreateTreeMatrix <- function(trees) {
 #Creates a matrix of file names that correspons to missing data amounts (rows) and model (cols)
+#GTRorFULL will create the tree matrix comparison with either ASC and GTR data or ASC and full data.
   missingDataTypes <- sapply(trees, getMissingDataAmount)
-  ASCtrees <- grep("ASC", trees)
-  GTRtrees <- grep("GTR", trees)
-  treeMatrix <- matrix(nrow=length(unique(missingDataTypes)), ncol=2)
+  ASCtrees <- grep("ASC_", trees)
+  GTRtrees <- c(grep("3_GTR", trees), grep("GTR_", trees))
+  FULLtrees <- c(grep("full", trees), grep("c*p3.nex", trees))
+  treeMatrix <- matrix(nrow=length(unique(missingDataTypes)), ncol=3)
   rownames(treeMatrix) <- paste("c", unique(missingDataTypes), "p3", sep="")
-  colnames(treeMatrix) <- c("ASC", "GTR")
+  colnames(treeMatrix) <- c("ASC", "GTR", "full")
   for(i in sequence(dim(treeMatrix)[1])) {
-    twoFiles <- trees[grep(rownames(treeMatrix)[i], trees, fixed=TRUE)]
-    treeMatrix[i,] <- c(twoFiles[grep("ASC", twoFiles)], twoFiles[-grep("ASC", twoFiles)])
+    threeFiles <- trees[grep(rownames(treeMatrix)[i], trees, fixed=TRUE)]
+    if(length(threeFiles) == 2){
+      if(length(threeFiles[grep("full", threeFiles)]) == 0)
+        threeFiles <- c(threeFiles, paste0(rownames(treeMatrix)[i], "NA.nex"))
+    }
+    treeMatrix[i,] <- c(threeFiles[grep("ASC", threeFiles)], threeFiles[c(grep("3_GTR", threeFiles), grep("GTR_", threeFiles))], threeFiles[c(grep("full", threeFiles), grep("c*p3.nex", threeFiles), grep("NA.nex", threeFiles))])
   }
   return(as.data.frame(treeMatrix, stringsAsFactors=FALSE))
 }
@@ -144,8 +150,13 @@ AddTreeDist <- function(TreeMatrixName, ListOfTrees){
   treeDists <- NULL
   for(row in sequence(dim(TreeMatrixName)[1])){
     twoTrees <- c(assTrees(TreeMatrixName[row,1], ListOfTrees), assTrees(TreeMatrixName[row,2], ListOfTrees))
-    dists <- phangorn::treedist(twoTrees[[1]], twoTrees[[2]])
-    treeDists <- rbind(treeDists, dists)
+    if(length(twoTrees) == 2){
+      dists <- phangorn::treedist(twoTrees[[1]], twoTrees[[2]])
+      treeDists <- rbind(treeDists, dists)
+    }
+    if(length(twoTrees) != 2){
+      treeDists <- rbind(treeDists, dists=rep(NA, 4))
+    }
   }
   cbind(TreeMatrixName, treeDists)
 }
@@ -159,15 +170,20 @@ AddBLD <- function(TreeMatrixName, ListOfTrees){
   Kscores <- NULL
   for (row in sequence(dim(TreeMatrixName)[1])) {
     twoTrees <- c(assTrees(TreeMatrixName[row,1], ListOfTrees), assTrees(TreeMatrixName[row,2], ListOfTrees))
-    twoTrees[[1]]$node.label <- NULL
-    twoTrees[[2]]$node.label <- NULL
-    write.nexus(twoTrees[[1]], file="tree1")  #prog will not run with bootstrap vals
-    write.nexus(twoTrees[[2]], file="tree2")  
-    runProg <- system("perl /Applications/PhylogeneticsPrograms/Ktreedist_v1/Ktreedist.pl -rt tree1 -ct tree2 -a", intern=T)
-    vals <- grep("UNTITLED", runProg)[2]
-    kscore <- as.numeric(strsplit(runProg[vals], " ")[[1]][grep("\\d+", strsplit(runProg[vals], " ")[[1]])])
-    names(kscore) <- c("Kscore", "ScaleFactor", "SymmDiff", "Npartitions")
-    Kscores <- rbind(Kscores, kscore)
+    if(length(twoTrees) == 2){
+      twoTrees[[1]]$node.label <- NULL
+      twoTrees[[2]]$node.label <- NULL
+      write.nexus(twoTrees[[1]], file="tree1")  #prog will not run with bootstrap vals
+      write.nexus(twoTrees[[2]], file="tree2")  
+      runProg <- system("perl /Applications/PhylogeneticsPrograms/Ktreedist_v1/Ktreedist.pl -rt tree1 -ct tree2 -a", intern=T)
+      vals <- grep("UNTITLED", runProg)[2]
+      kscore <- as.numeric(strsplit(runProg[vals], " ")[[1]][grep("\\d+", strsplit(runProg[vals], " ")[[1]])])
+      names(kscore) <- c("Kscore", "ScaleFactor", "SymmDiff", "Npartitions")
+      Kscores <- rbind(Kscores, kscore)
+    }
+    if(length(twoTrees) != 2){
+      Kscores <- rbind(Kscores, kscore=rep(NA, 4))
+    }
   }
   cbind(TreeMatrixName, Kscores)
 }
@@ -514,25 +530,27 @@ GetRFmatrix <- function(analysis) {
 #######    Post Analysis Scraping   ############
 ################################################
 
-GetRAxMLStatsPostAnalysis <- function(workingDirectoryOfResults, datafiles="c*noAmbigs.snps", is.full=FALSE) {
+GetRAxMLStatsPostAnalysis <- function(workingDirectoryOfResults) {
   startingDir <- getwd()
   setwd(workingDirectoryOfResults)
-  cFiles <- system(paste("ls", datafiles), intern=T)
+  vFiles <- system(paste("ls c*noAmbigs.snps"), intern=T)
+  cFiles <- system(paste("ls c*p3.snps"), intern=T)
   outFiles <- system("ls RAxML_info*", intern=T)
   results <- matrix(nrow=length(outFiles), ncol=10)
   for(i in sequence(length(outFiles))){
-    if(is.full){
+    if(length(grep("full", outFiles[i])) > 0){
       MissingDataLevel <- strsplit(strsplit(outFiles[i], "_")[[1]][3], ".phy")[[1]]
       whichModel <- strsplit(outFiles[i], "_")[[1]][2]
-      VariableSites <- NA
-      numberLoci <- NA
+      SNPdataset <- ReadSNP(cFiles[grep(MissingDataLevel, cFiles)], fileFormat="phy")
+      VariableSites <- sum(SNPdataset$nsites)
+      numberLoci <- SNPdataset$nloci
     }
-    if(!is.full){
+    if(length(grep("full", outFiles[i])) == 0){
       MissingDataLevel <- strsplit(strsplit(outFiles[i], "_")[[1]][2], "info.")[[1]][2]
       whichModel <- strsplit(outFiles[i], "_")[[1]][3]
-      SNPdataset <- read.table(cFiles[grep(MissingDataLevel, cFiles)], row.names=1, colClasses="character", skip=1)
-      VariableSites <- nchar(paste(SNPdataset[1,], collapse=""))
-      numberLoci <- dim(SNPdataset)[2]
+      SNPdataset <- ReadSNP(vFiles[grep(MissingDataLevel, vFiles)], fileFormat="phy", extralinestoskip=1)
+      VariableSites <- sum(SNPdataset$nsites)
+      numberLoci <- SNPdataset$nloci
     }
     alignmentPatterns <- gsub("\\D", "", system(paste("grep 'distinct alignment patterns'", outFiles[i]), intern=T))
     Missing <-gsub("[A-Za-z:]+|[%]$", "", system(paste("grep 'Proportion of gaps and completely undetermined characters in this alignment:'", outFiles[i]), intern=T), perl=T)
