@@ -53,7 +53,6 @@ for(i in sequence(dim(ascfull.treeMatrix)[1])) {
   names(ascfull.BL.AllTrees)[[i]] <- rownames(ascfull.treeMatrix)[i]
 }
 
-
 #  Load MrBayes Trees and post-analyses scraping  #not done YET...need to incorporate full too
 
 analysis <- "MrBayes"
@@ -101,8 +100,12 @@ whichDatasets <- paste("c", levels, "p3", sep="")  #datasets from file names
 AllOrder <- paste("c", seq(5, 70, 5), "p3", sep="") #datasets from sequence
 orderToGo <- AllOrder[AllOrder %in% whichDatasets]  #datasets of sequence that exist
 focalDatasets <- c("c5p3", "c25p3", "c45p3", "c65p3")
-whichFocalDatasets <- focalDatasets[focalDatasets %in% whichDatasets]
+#whichFocalDatasets <- focalDatasets[focalDatasets %in% whichDatasets]
 analyses <- c("RAxML", "MrBayes")
+
+setwd(mainDir)
+save(files, RAxML.trees, RAxML.TreeList, ML.results, ascgtr.treeMatrix, ascgtr.BL.AllTrees, ascfull.treeMatrix, ascfull.BL.AllTrees, MrBayes.trees, MrBayes.TreeList, MB.results, MB.ascgtr.treeMatrix, MB.ascgtr.BL.AllTrees, MB.ascfull.treeMatrix, MB.ascfull.BL.AllTrees, simTree, orderedLevels, orderToGo, focalDatasets, analyses, file="phrynoResults.Rdata")
+
 
 #for figures comparing ASC-GTR or FULL:ASC:
 comp="FULLASC"
@@ -118,8 +121,6 @@ if(comp == "FULLASC"){
   treeMatrices <- list(ascfull.treeMatrix, MB.ascfull.treeMatrix)
 }
 
-setwd(mainDir)
-save.image(file="phrynoWorkspace.Rdata")
 
 ##  ----------------------------------------  ##
 ##      End Post-Analyses Trees and Data      ##
@@ -135,8 +136,7 @@ save.image(file="phrynoWorkspace.Rdata")
 ##  ----------------------------------------  ##
 
 #  If you want to start from here, you can load up the workspace with all the data.
-#load("phrynoWorkspace.Rdata")
-
+#load("phrynoResults.Rdata")
 
 #  Make Table 1. Simulation Branch Lengths -- complete data
 
@@ -184,6 +184,7 @@ newres <- rbind(c("--", 100-f.mean.topology, 100-n.mean.topology, 100-a.mean.top
 colnames(newres)[1] <- "true branch length"
 rownames(newres)[1] <- "topology"
 
+setwd(FigDir)
 write.table(newres, file="table1.txt")
 
 
@@ -258,7 +259,7 @@ newres <- rbind(c("--", a.mean.topology, b.mean.topology, c.mean.topology, d.mea
 colnames(newres)[1] <- "true branch length"
 rownames(newres)[1] <- "topology"
 
-setwd(mainDir)
+setwd(FigDir)
 write.table(newres, file="table2.txt", quote=FALSE, sep=" &")
 
 #  Table 3 was made by hand
@@ -267,7 +268,6 @@ write.table(newres, file="table2.txt", quote=FALSE, sep=" &")
 #  Make Table 4. Summary ddRadSeq data. 
 
 setwd(phrynoDir)
-
 dataset <- seq(from=70, to=5, by=-5)
 ASC.ML.results <- ML.results[which(ML.results[,2] == "ASC"),]
 table4 <- matrix(nrow=length(dataset), ncol=6)
@@ -288,11 +288,13 @@ for(m in sequence(dim(table4)[1])){
   table4[m,6] <- round(mean(dataOverlap[[whichDataset]][-grep(pattern="PH", names(dataOverlap[[whichDataset]]))]), digits=2)
   table4[m,5] <- round(mean(dataOverlap[[whichDataset]][grep(pattern="PH", names(dataOverlap[[whichDataset]]))]), digits=2)
 }
+setwd(FigDir)
 write.table(table4, file="table4.txt", quote=FALSE, row.names=FALSE)  
 
 
 #  Table 5. Support for Clades
 
+setwd(phrynoDir)
 RAxTrees <- RAxML.TreeList[grep("c5p3|c25p3|c45p3|c65p3", names(RAxML.TreeList))]
 MrBTrees <- MrBayes.TreeList[grep("c5p3|c25p3|c45p3|c65p3", names(MrBayes.TreeList))]
 ascRAxTrees <- RAxTrees[grep("ASC", names(RAxTrees))]
@@ -354,7 +356,7 @@ for(i in sequence(dim(table5)[1])){
     table5[i,col] <- paste(threeVals, collapse="/")
   }
 }
-setwd(mainDir)
+setwd(FigDir)
 write.table(table5, file="table5.txt", quote=FALSE, sep=" & ")
  
 
@@ -443,14 +445,20 @@ for(anal in 1:length(analyses)){
     BL.AllTrees <- BL.AllTrees.RAxML
   if(whichAnalysis == "MrBayes")
     BL.AllTrees <- BL.AllTrees.MrBayes
-  for(i in sequence(length(whichFocalDatasets))){
-    dataToUse <- which(whichFocalDatasets[i] == names(BL.AllTrees))
+  currmax <- 0
+  for(i in sequence(length(focalDatasets))){
+    dataToUse <- which(focalDatasets[i] == names(BL.AllTrees))
+    if(length(dataToUse) > 0)
+      currmax <- max(c(currmax, BL.AllTrees[[dataToUse]]$branchlength[which(BL.AllTrees[[dataToUse]]$present)], BL.AllTrees[[dataToUse]]$corr.BL[which(BL.AllTrees[[dataToUse]]$present)]))
+  }
+  for(i in sequence(length(focalDatasets))){
+    dataToUse <- which(focalDatasets[i] == names(BL.AllTrees))
     if(length(dataToUse) == 0)
       plot(1:10, 1:10, type="n", axes=FALSE, frame.plot=FALSE, ylab="", xlab="")
     else {
       BLs <- BL.AllTrees[[dataToUse]]$branchlength[which(BL.AllTrees[[dataToUse]]$present)]
       corr.BLs <- BL.AllTrees[[dataToUse]]$corr.BL[which(BL.AllTrees[[dataToUse]]$present)]
-      plot(BLs, corr.BLs, pch=21, bg="gray", ylim=c(0, 0.22), xlim=c(0, 0.22), xlab="ASC", ylab="non-ASC", type="n")
+      plot(BLs, corr.BLs, pch=21, bg="gray", ylim=c(0, currmax+currmax*.1), xlim=c(0, currmax+currmax*.1), xlab="ASC", ylab="non-ASC", type="n")
       linmod <- lm(corr.BLs ~ BLs)
       abline(linmod, lty=2)
       y <- 0.18
@@ -458,7 +466,7 @@ for(anal in 1:length(analyses)){
       points(BLs, corr.BLs, pch=21, bg="gray")
       text(x=getX(y, linmod), y=y, paste("m =", round(linmod$coefficients[2], digits=2)), srt=usr2dev(linmod$coefficients[2]))
       lines(c(-1,1), c(-1,1))
-      title(main=paste("s", strsplit(whichFocalDatasets[[i]], "\\D")[[1]][2], sep=""))
+      title(main=paste("s", strsplit(focalDatasets[[i]], "\\D")[[1]][2], sep=""))
     }
   }
 }
@@ -491,6 +499,7 @@ for(anal in 1:length(analyses)){
       tree2 <- assTrees(treeMatrices[[anal]][dataToUse,2], TreeList)[[1]]
       edgeColors <- BL.AllTrees[[dataToUse]]$edgeColor
       edgeColors[which(is.na(edgeColors))] <- rep("gray", length(which(is.na(edgeColors))))
+    print(paste(names(BL.AllTrees)[i], mean(BL.AllTrees[[i]]$relativeBLdiff, na.rm=TRUE)))
       plot(tree1, edge.lty=BL.AllTrees[[dataToUse]]$edgelty, edge.color= edgeColors, cex=0.5, edge.width=2)
       legtxt <- c("Discordant", "< -10%", "-10% to 10%", "> 10%", "> 20%", "> 30%", "> 40%", "> 50%")
       legcolors <- c("gray", rgb(51,51,255, max=255), "gray", rgb(255,255,102, max=255), rgb(255,178,102, max=255), rgb(225,128,0, max=255), rgb(225,0,0, max=255), rgb(153,0,0, max=255))
@@ -518,6 +527,7 @@ for(anal in 1:length(analyses)){
 
 #  Make Figure 5. Mean branch length error (%)
 
+setwd(FigDir)
 pdf(file="Figure5.pdf", width=8.5, height=5)
 for(anal in 1:length(analyses)){
   whichAnalysis <- analyses[anal] 
@@ -533,15 +543,19 @@ for(anal in 1:length(analyses)){
   mean.var.data <- NULL
   for(i in sequence(length(orderToGo))){
     whichData <- orderToGo[i]
-    data1 <- taxon.BLdiff[[which(names(taxon.BLdiff) == whichData)]]
-    data2 <- rep("OG", length(data1))
-    data2[grep(pattern="PH", names(dataOverlap[[which(names(dataOverlap) == whichData)]]))] <- "PH"
-    data3 <- data.frame(data1, data2)
-    OGmean <- mean(data3[which(data3[,2] == "OG"),1])
-    OGvar <- var(data3[which(data3[,2] == "OG"),1])
-    PHmean <- mean(data3[which(data3[,2] == "PH"),1])
-    PHvar <- var(data3[which(data3[,2] == "PH"),1])
-    data4 <- c(whichData, OGmean, OGvar, PHmean, PHvar)
+    if(length(which(names(taxon.BLdiff) == whichData)) == 0)
+      data4 <- rep(NA, 5)
+    else {
+      data1 <- taxon.BLdiff[[which(names(taxon.BLdiff) == whichData)]]
+      data2 <- rep("OG", length(data1))
+      data2[grep(pattern="PH", names(dataOverlap[[which(names(dataOverlap) == whichData)]]))] <- "PH"
+      data3 <- data.frame(data1, data2)
+      OGmean <- mean(data3[which(data3[,2] == "OG"),1])
+      OGvar <- var(data3[which(data3[,2] == "OG"),1])
+      PHmean <- mean(data3[which(data3[,2] == "PH"),1])
+      PHvar <- var(data3[which(data3[,2] == "PH"),1])
+      data4 <- c(whichData, OGmean, OGvar, PHmean, PHvar)
+    }
     mean.var.data <- rbind(mean.var.data, data4)
   }
   colnames(mean.var.data) <- c("whichData", "OGmean", "OGvar", "PHmean", "PHvar")
@@ -556,9 +570,9 @@ for(anal in 1:length(analyses)){
   if(whichAnalysis == "MrBayes")
     MrBayes.mean.var.data <- mean.var.data
 }
-q <- sequence(dim(mean.var.data)[1])
+q <- sequence(dim(mean.var.data)[1])  #which(!is.na(mean.var.data[,1]))
 par(mar=c(5,5,2,5))
-plot(rep(q, 2), c(RAxML.mean.var.data[,2], MrBayes.mean.var.data[,2]), type="n", ylim=c(min(c(MrBayes.mean.var.data[,4], MrBayes.mean.var.data[,2])), max(c(MrBayes.mean.var.data[,4], MrBayes.mean.var.data[,2]))), ylab="mean", xlab="", axes=FALSE)
+plot(rep(q, 2), c(RAxML.mean.var.data[,2], MrBayes.mean.var.data[,2]), type="n", ylim=c(min(c(RAxML.mean.var.data[,4], RAxML.mean.var.data[,2], MrBayes.mean.var.data[,4], MrBayes.mean.var.data[,2]), na.rm=TRUE), max(c(RAxML.mean.var.data[,4], RAxML.mean.var.data[,2], MrBayes.mean.var.data[,4], MrBayes.mean.var.data[,2]), na.rm=TRUE)), ylab="mean", xlab="", axes=FALSE)
 axis(side=2)
 axis(side=1, at=q, labels=orderToGo[-which(orderToGo == "c70p3")])
 points(q, RAxML.mean.var.data[,2], col="gray")
@@ -573,12 +587,14 @@ for(i in sequence(dim(MrBayes.mean.var.data)[1]-1)){
   segments(i, MrBayes.mean.var.data[i,2], i+1, MrBayes.mean.var.data[i+1,2], col="gray", lty=2)
   segments(i, MrBayes.mean.var.data[i,4], i+1, MrBayes.mean.var.data[i+1,4], col="black", lty=2)
 }
+setwd(mainDir)
 dev.off()
 
 
 #  Make Figure 6 a-d. Scatterplot branch length support 
 #  Figure 6 e-h was done using AWTY online to account for values < 50% and bipartition files not matching up correctly. 
 
+setwd(FigDir)
 pdf(file="Figure6a-d.pdf", width=8.5, height=5)
 op <- par(mar=par("mar")/1.7)
 layout(matrix(1:4, nrow=1, byrow=TRUE), respect=TRUE)
@@ -596,12 +612,14 @@ for(i in sequence(length(focalDatasets))){
   #text(support, corr.support, labels=BL.AllTrees[[dataToUse]][datarows,1])
   title(main=paste("s", strsplit(focalDatasets[[i]], "\\D")[[1]][2], sep=""))
 }
+setwd(mainDir)
 dev.off()
 
 
 #  Make Figure 7 a-b. Average RF distances among replicate runs.
 #  Figure 7c was made using Mesquite. 
 
+setwd(FigDir)
 MLRFdistMatrix <- GetRFmatrix("RAxML")
 BIRFdistMatrix <- GetRFmatrix("MrBayes")
 RFdistMatrix <- list(ML=MLRFdistMatrix, BI=BIRFdistMatrix)
