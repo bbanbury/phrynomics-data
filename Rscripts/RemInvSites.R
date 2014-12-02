@@ -6,11 +6,10 @@ library(phrynomics)
 
 args <- commandArgs(TRUE)
 file <- args[1]
-amount <- args[2]
-outputfile <- args[3]
+outputfile <- args[2]
+partsFiles <- args[3]
 
-
-RemoveInvariantSites <- function (SNPdataset, amount=1.0, chatty = FALSE){
+RemoveInvariantSites <- function (SNPdataset, chatty=FALSE, createParts=NULL){
   snpclass <- "table"
   if (class(SNPdataset) == "snp") {
     snpclass <- "snp"
@@ -20,43 +19,46 @@ RemoveInvariantSites <- function (SNPdataset, amount=1.0, chatty = FALSE){
   initialLociLengths <- nchar(SNPdataset[1, ])
   splitdata <- SplitSNP(SNPdataset)
   KeepVector <- apply(splitdata, 2, IsVariable)
-  breaks <- which(splitdata[1, ] == " ")
-  if(amount < 1.0){
-    invars <- which(KeepVector == "FALSE")
-    randomvars <- sample(invars, size=length(invars)*(1-amount))
-    KeepVector[randomvars] <- rep("TRUE", length(randomvars))
-  }
-  newSNPdataset <- cSNP(splitdata, KeepVector = KeepVector, maintainLoci = TRUE)
+ 
+  newSNPdataset <- cSNP(splitdata, KeepVector=KeepVector)
   newsnps <- sum(nchar(newSNPdataset[1, ]))
-  if (chatty) 
+  if(chatty) 
     message(paste("removed", snps - newsnps, "of", snps, "sites"))
+  if(!is.null(createParts)){
+    splitInvars <- splitdata[,which(KeepVector == FALSE)]
+    invars <- apply(splitInvars, 2, ReturnUniqueBases)
+    for(i in sequence(length(invars))){
+      if(length(invars[[i]]) > 1)
+        invars[[i]] <- invars[[i]][1]  #pull off first invar when there are ambig codes
+    }
+    invars <- unlist(invars)
+    partsInfo <- paste0("ASC_DNA, p1=1-", newsnps)
+    invInfo <- paste(length(which(invars == "A")), length(which(invars == "C")), length(which(invars == "T")), length(which(invars == "G")))   #ACTG
+    if(createParts == "felsenstein"){
+      invInfo <- sum(length(which(invars == "A")), length(which(invars == "C")), length(which(invars == "T")), length(which(invars == "G")))  #ACTG
+    }
+    if (snpclass == "snp") 
+      return(list(data=ReadSNP(newSNPdataset), partsInfo=partsInfo, invInfo=invInfo))
+    else
+      return(list(data=newSNPdataset, partsInfo=partsInfo, invInfo=invInfo))
+  }
   if (snpclass == "snp") 
     return(ReadSNP(newSNPdataset))
   else return(newSNPdataset)
 }
 
-RemInvSites <- function(snpFile, amount, outputName){
+RemInvSites <- function(snpFile, outputName, parts=NULL){
   initializeTable <- read.table(snpFile, skip=1, stringsAsFactors=FALSE, row.names=1, colClasses=c("character"))
   snpdata <- ReadSNP(initializeTable)
-  snpdata <- RemoveInvariantSites(snpdata, amount=amount)
-  WriteSNP(snpdata, file=outputName)
-  #print(snpdata)
+  snpdata <- RemoveInvariantSites(snpdata, createParts=parts)
+  if(!is.null(parts)){
+    WriteSNP(snpdata$data, file=outputName)
+    pInfo <- paste0("[asc~", outputName, ".inv], ", snpdata$partsInfo)
+    write(pInfo, file=paste0(outputName, ".part"))
+    write(snpdata$invInfo, file=paste0(outputName, ".inv"))  	
+  }
+  else
+    WriteSNP(snpdata, file=outputName)
 }
 
-RemInvSites(file, amount, outputfile)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+RemInvSites(file, outputfile, partsFiles)
