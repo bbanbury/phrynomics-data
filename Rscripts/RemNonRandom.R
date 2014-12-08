@@ -2,10 +2,11 @@ library(phrynomics)
 
 args <- commandArgs(TRUE)
 file <- args[1]
-lociLength <- as.numeric(args[2])
-RElength <- as.numeric(args[3])
-KeepRE <- args[4]
-outputfile <- args[5]
+rootSeqfile <- args[2]
+lociLength <- as.numeric(args[3])
+RElength <- as.numeric(args[4])
+KeepRE <- args[5]
+outputfile <- args[6]
 
 cSNP51 <- function(splitData, lociLength=51){
 #this function will make loci in the lengths of lociLength
@@ -31,52 +32,60 @@ BreakAtRE <- function(locus, RElength){
   return(cbind(splits1, splits2))
 }
 
-GetMostFrequentRE <- function(RE){
-  REs <- unique(RE[,1])
-  vals <- rep(NA, length(REs))
-  for(i in sequence(length(REs))){
-    vals[i] <- length(grep(REs[i], RE[,1]))
-  }
-  return(REs[which.max(vals)])
+#GetMostFrequentRE <- function(RE){
+#  REs <- unique(RE[,1])
+#  vals <- rep(NA, length(REs))
+#  for(i in sequence(length(REs))){
+#    vals[i] <- length(grep(REs[i], RE[,1]))
+#  }
+#  return(REs[which.max(vals)])
+#}
+
+GetShortRE <- function(rootlocus, RElength){
+  Rep <- strsplit(gsub(" ", "", rootlocus), "")[[1]][1: RElength]
+  return(paste(Rep, collapse=""))
 }
 
-ReplaceWithMissing <- function(RE, MostFreqRE){
+GetREsFromRoot <- function(rootSeqfile){
+  lines <- system(paste("grep 'root seq'", rootSeqfile), intern=TRUE)
+  lines <- gsub("locus  51 root seq              ", "", lines)
+  REs <- sapply(lines, GetShortRE, RElength=12, USE.NAMES=FALSE)
+  return(REs)
+}
+
+ReplaceWithMissing <- function(RE, rootRE){
 #this function will take any infrequent RE and replace with NNNs
-  toChange <- which(RE[,1] != MostFreqRE)
+  toChange <- which(RE[,1] != rootRE)
   nchars <- nchar(RE[1,])
   RE[toChange,1] <- rep(paste(rep("N", nchars[1]), collapse=""), length(toChange))
   RE[toChange,2] <- rep(paste(rep("N", nchars[2]), collapse=""), length(toChange))
   return(RE)
 }
 
-CheckRE <- function(locus, RElength, KeepRE=FALSE){
-#this function will take a locus and check if the first X number of sites match (RE), if they do not, then the ones with the lowest frequency are replaced with Ns
+CheckRE <- function(locus, rootRE, RElength, KeepRE=FALSE){
+#This function will check that a locus matches a RE, if it does not, it replaces with NNNs
   RE <- BreakAtRE(locus, RElength)
-  if(length(unique(RE[,1])) == 1){  #if REs are all the same
-    if(KeepRE)
-      return(locus)  #return original locus (no mods)
-    return(RE[,2])  #or return without RE
+  if(any(rootRE != RE[,1])){
+    dontmatch <- which(rootRE != RE[,1])
+    RE <- ReplaceWithMissing(RE, rootRE)
   }
-  if(length(unique(RE[,1])) > 1){
-    MostFreqRE <- GetMostFrequentRE(RE)
-    newRE <- ReplaceWithMissing(RE, MostFreqRE)
-    if(KeepRE)
-      return(cSNP(newRE))
-    return(newRE[,2])
-  }
+  if(KeepRE)
+    return(cSNP(RE))
+  return(RE[,2])
 }
 
-RemNonRandom <- function(snpFile, lociLength, RElength, KeepRE, outputName){
+RemNonRandom <- function(snpFile, rootSeqfile, lociLength, RElength, KeepRE, outputName){
   initializeTable <- read.table(snpFile, skip=1, stringsAsFactors=FALSE, row.names=1, colClasses=c("character"))
   snpdata <- SplitSNP(cSNP(ReadSNP(initializeTable), maintainLoci=FALSE))
   snpsbyloci <- cSNP51(snpdata, lociLength)
+  rootREs <- GetREsFromRoot(rootSeqfile)
   for(i in sequence(dim(snpsbyloci)[2])){
-    snpsbyloci[,i] <- CheckRE(snpsbyloci[,i], RElength, KeepRE)
+    snpsbyloci[,i] <- CheckRE(snpsbyloci[,i], rootREs[i], RElength, KeepRE)
   }
   WriteSNP(snpsbyloci, file=outputName)
 }
 
-RemNonRandom(snpFile=file, lociLength, RElength, KeepRE, outputfile)
+RemNonRandom(snpFile=file, rootSeqfile, lociLength, RElength, KeepRE, outputfile)
 
 
 

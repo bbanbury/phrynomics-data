@@ -578,6 +578,57 @@ GetRAxMLStatsPostAnalysis <- function(workingDirectoryOfResults) {
   return(results)
 }
 
+GetRAxMLStatsPostAnalysis2 <- function(workingDirectoryOfResults) {
+  startingDir <- getwd()
+  setwd(workingDirectoryOfResults)
+  vFiles <- system(paste("ls s*noAmbigs.phy"), intern=T)
+  cFiles <- system(paste("ls s*full.phy"), intern=T)
+  outFiles <- system("ls RAxML_info*", intern=T)
+  results <- matrix(nrow=length(outFiles), ncol=10)
+  for(i in sequence(length(outFiles))){
+    if(length(grep("full", outFiles[i])) > 0){
+      MissingDataLevel <- paste0("s", strsplit(outFiles[i], split="[A-z]+")[[1]][3])
+      MissingDataSet <- paste0("s", strsplit(outFiles[i], split="[A-z]+")[[1]][3], "full")
+      whichModel <- strsplit(outFiles[i], "[._]")[[1]][3]
+      SNPdataset <- ReadSNP(vFiles[grep(MissingDataSet, cFiles)], fileFormat="phy", extralinestoskip=1)
+      VariableSites <- sum(SNPdataset$nsites)
+      numberLoci <- SNPdataset$nloci
+    }
+    if(length(grep("full", outFiles[i])) == 0){
+      MissingDataLevel <- paste0("s", strsplit(outFiles[i], split="[A-z]+")[[1]][3])
+      MissingDataSet <- paste0("s", strsplit(outFiles[i], split="[A-z]+")[[1]][3], "noAmbigs")
+      whichModel <- strsplit(outFiles[i], "[._]")[[1]][3]
+      SNPdataset <- ReadSNP(vFiles[grep(MissingDataSet, vFiles)], fileFormat="phy", extralinestoskip=1)
+      VariableSites <- sum(SNPdataset$nsites)
+      numberLoci <- SNPdataset$nloci
+    }
+    alignmentPatterns <- gsub("\\D", "", system(paste("grep 'distinct alignment patterns'", outFiles[i]), intern=T))
+    Missing <-gsub("[A-Za-z:]+|[%]$", "", system(paste("grep 'Proportion of gaps and completely undetermined characters in this alignment:'", outFiles[i]), intern=T), perl=T)
+    BootstrapTime <- strsplit(system(paste("grep 'Overall Time for '", outFiles[i]), intern=T), split="[A-Za-z:]+|[%]$", perl=T)[[1]][6]
+    Likelihood <- strsplit(system(paste("grep 'Final ML Optimization Likelihood:'", outFiles[i]), intern=T), split="[A-Za-z:]+|[%]$", perl=T)[[1]][5]
+    #Alpha <- gsub("[alpha: ]", "", system(paste("grep alpha: ", outFiles[i]), intern=T), perl=T)
+    Alpha <- "0"
+	TreeLength <- gsub("Tree-Length: ", "", system(paste("grep Tree-Length: ", outFiles[i]), intern=T), fixed=T)
+    results[i,] <- c(MissingDataLevel, whichModel, numberLoci, VariableSites, alignmentPatterns, Missing, BootstrapTime, Likelihood, Alpha, TreeLength)
+  }
+  results <- data.frame(results, stringsAsFactors=FALSE)
+  colnames(results) <- c("Level", "Model", "NumberLoci", "VariableSites", "AlignmentPatterns", "MissingData", "BootstrapTime", "Likelihood", "Alpha", "TreeLength")
+  options(digits=10)
+  results$Level <- as.factor(results$Level)
+  results$Model <- as.factor(results$Model)
+  results$NumberLoci <- as.numeric(results$NumberLoci)
+  results$VariableSites <- as.numeric(results$VariableSites)
+  results$AlignmentPatterns <- as.numeric(results$AlignmentPatterns)
+  results$MissingData <- as.numeric(results$MissingData)
+  results$BootstrapTime <- as.numeric(results$BootstrapTime)
+  results$Likelihood <- as.numeric(results$Likelihood)
+  results$Alpha <- as.numeric(results$Alpha)
+  results$TreeLength <- as.numeric(results$TreeLength)
+  setwd(startingDir)
+  return(results)
+}
+
+
 GetLinesToSkip <- function(file){
   return(length(suppressWarnings(system(paste("grep 'ID:' ", file, sep=""), intern=TRUE))))
 }
