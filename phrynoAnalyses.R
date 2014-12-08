@@ -8,15 +8,14 @@
 
 library(phangorn)
 library(phrynomics)
-
-mainDir <- "/Users/Barb/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper"
-phrynoDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/phrynoRuns/"
-RepDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/RepeatRuns/"
-SimDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/Simulation/"
-FigDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/FULLfigs"
-
-setwd(mainDir)
 source("~/phrynomics-data/trunk/phrynomicsFunctions.R")
+
+
+mainDir <- "/Users/Barb/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/newPhryno"
+phrynoDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/newPhryno/vstam_vlewis_vfel_Results"
+RepDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/RepeatRuns/"
+FigDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/FULLfigs2"
+
 
 
 ##  ----------------------------------------  ##
@@ -26,100 +25,76 @@ source("~/phrynomics-data/trunk/phrynomicsFunctions.R")
 #  Load RAxML Trees and post-analyses scraping
 
 setwd(phrynoDir)
-files <- system("ls c*noAmbigs.snps", intern=T)
+files <- system("ls s*noAmbigs.phy", intern=T)
+# analysis <- "RAxML"
+# RAxML.trees <- system("ls RAxML_bipartitions.*", intern=T)  #trees with bootstraps
+# RAxML.TreeList <- CreateTreeList(RAxML.trees, "RAxML")
+# RAxML.TreeList <- lapply(RAxML.TreeList, ladderize)
+# ML.results <- GetRAxMLStatsPostAnalysis(".")
+
+# treeMatrix <- CreateTreeMatrix(RAxML.trees)
+# ascgtr.treeMatrix <- AddTreeDist(treeMatrix[,-3], RAxML.TreeList)
+# ascgtr.treeMatrix <- AddBLD(ascgtr.treeMatrix, RAxML.TreeList)
+# ascgtr.BL.AllTrees <- list()
+# for(i in sequence(dim(ascgtr.treeMatrix)[1])) {
+  # tree1 <- assTrees(ascgtr.treeMatrix[i,1], RAxML.TreeList)[[1]]
+  # tree2 <- assTrees(ascgtr.treeMatrix[i,2], RAxML.TreeList)[[1]]
+  # ascgtr.BL.AllTrees[[i]] <- MakeBranchLengthMatrix(tree1, tree2, analysis=analysis, dataset=rownames(treeMatrix)[i])
+  # names(ascgtr.BL.AllTrees)[[i]] <- rownames(ascgtr.treeMatrix)[i]
+# }
+# ascfull.treeMatrix <- AddTreeDist(treeMatrix[,c(3,1)], RAxML.TreeList)
+# ascfull.treeMatrix <- AddBLD(ascfull.treeMatrix, RAxML.TreeList)
+# ascfull.BL.AllTrees <- list()
+# for(i in sequence(dim(ascfull.treeMatrix)[1])) {
+  # tree1 <- assTrees(ascfull.treeMatrix[i,1], RAxML.TreeList)[[1]]
+  # tree2 <- assTrees(ascfull.treeMatrix[i,2], RAxML.TreeList)[[1]]
+  # ascfull.BL.AllTrees[[i]] <- MakeBranchLengthMatrix(tree1, tree2, analysis=analysis, dataset=rownames(treeMatrix)[i])
+  # names(ascfull.BL.AllTrees)[[i]] <- rownames(ascfull.treeMatrix)[i]
+# }
+
+
+#load new vstam, vfel, vlewis
+setwd(phrynoDir)
 analysis <- "RAxML"
 RAxML.trees <- system("ls RAxML_bipartitions.*", intern=T)  #trees with bootstraps
 RAxML.TreeList <- CreateTreeList(RAxML.trees, "RAxML")
 RAxML.TreeList <- lapply(RAxML.TreeList, ladderize)
-ML.results <- GetRAxMLStatsPostAnalysis(".")
+ML.results <- GetRAxMLStatsPostAnalysis2(".")
 
-treeMatrix <- CreateTreeMatrix(RAxML.trees)
-ascgtr.treeMatrix <- AddTreeDist(treeMatrix[,-3], RAxML.TreeList)
-ascgtr.treeMatrix <- AddBLD(ascgtr.treeMatrix, RAxML.TreeList)
-ascgtr.BL.AllTrees <- list()
-for(i in sequence(dim(ascgtr.treeMatrix)[1])) {
-  tree1 <- assTrees(ascgtr.treeMatrix[i,1], RAxML.TreeList)[[1]]
-  tree2 <- assTrees(ascgtr.treeMatrix[i,2], RAxML.TreeList)[[1]]
-  ascgtr.BL.AllTrees[[i]] <- MakeBranchLengthMatrix(tree1, tree2, analysis=analysis, dataset=rownames(treeMatrix)[i])
-  names(ascgtr.BL.AllTrees)[[i]] <- rownames(ascgtr.treeMatrix)[i]
-}
-ascfull.treeMatrix <- AddTreeDist(treeMatrix[,c(3,1)], RAxML.TreeList)
-ascfull.treeMatrix <- AddBLD(ascfull.treeMatrix, RAxML.TreeList)
-ascfull.BL.AllTrees <- list()
-for(i in sequence(dim(ascfull.treeMatrix)[1])) {
-  tree1 <- assTrees(ascfull.treeMatrix[i,1], RAxML.TreeList)[[1]]
-  tree2 <- assTrees(ascfull.treeMatrix[i,2], RAxML.TreeList)[[1]]
-  ascfull.BL.AllTrees[[i]] <- MakeBranchLengthMatrix(tree1, tree2, analysis=analysis, dataset=rownames(treeMatrix)[i])
-  names(ascfull.BL.AllTrees)[[i]] <- rownames(ascfull.treeMatrix)[i]
-}
 
-#  Load MrBayes Trees and post-analyses scraping  #not done YET...need to incorporate full too
 
-analysis <- "MrBayes"
-MrBayes.trees <- system(paste("ls *.con.tre", sep=""), intern=T)  
-MrBayes.TreeList <- CreateTreeList(MrBayes.trees, "MrBayes")
-MrBayes.TreeList <- lapply(MrBayes.TreeList, multi2di)  #remove later
-MrBayes.TreeList <- lapply(MrBayes.TreeList, ladderize)  #remove later
-MB.results <- GetMrBayesStatsPostAnalysis(".")  #will be warnings, because of missing analyses
-
-treeMatrix <- CreateTreeMatrix(MrBayes.trees)
-MB.ascgtr.treeMatrix <- AddTreeDist(treeMatrix[,-3], MrBayes.TreeList)
-MB.ascgtr.treeMatrix <- AddBLD(MB.ascgtr.treeMatrix, MrBayes.TreeList)
-MB.ascgtr.BL.AllTrees <- list()
-for(i in sequence(dim(MB.ascgtr.treeMatrix)[1])) {
-  tree1 <- assTrees(MB.ascgtr.treeMatrix[i,1], MrBayes.TreeList)[[1]]
-  tree2 <- assTrees(MB.ascgtr.treeMatrix[i,2], MrBayes.TreeList)[[1]]
-  MB.ascgtr.BL.AllTrees[[i]] <- MakeBranchLengthMatrix(tree1, tree2, analysis=analysis, dataset=rownames(treeMatrix)[i])
-  names(MB.ascgtr.BL.AllTrees)[[i]] <- rownames(treeMatrix)[i]
-}
-MB.ascfull.treeMatrix <- AddTreeDist(treeMatrix[,c(3,1)], MrBayes.TreeList)
-MB.ascfull.treeMatrix <- AddBLD(MB.ascfull.treeMatrix, MrBayes.TreeList)
-MB.ascfull.BL.AllTrees <- list()
-for(i in sequence(dim(MB.ascfull.treeMatrix)[1])) {
-  if(length(grep("NA", MB.ascfull.treeMatrix[i,1])) == 0){
-    tree1 <- assTrees(MB.ascfull.treeMatrix[i,1], MrBayes.TreeList)[[1]]
-    tree2 <- assTrees(MB.ascfull.treeMatrix[i,2], MrBayes.TreeList)[[1]]
-    MB.ascfull.BL.AllTrees[[i]] <- MakeBranchLengthMatrix(tree1, tree2, analysis=analysis, dataset=rownames(treeMatrix)[i])
-    names(MB.ascfull.BL.AllTrees)[[i]] <- rownames(treeMatrix)[i]
-  }
-}
-#MB.ascfull.BL.AllTrees <- MB.ascfull.BL.AllTrees[-c(which(names(MB.ascfull.BL.AllTrees) == "" ), which(is.na(names(MB.ascfull.BL.AllTrees))))]  #remove analyses that didn't finish (c5 and c10)
 
 
 #  Create global objects for tables and figs to be made
-
-s <- "(A:0.2, B:0.05, (C:0.2, D:0.05)X:0.05);"
-simTree <- read.tree(text=s)
 
 levels <-NULL
 for(i in sequence(length(files))){
   levels <- as.numeric(c(levels, strsplit(files[i], "\\D+")[[1]][2])) #numerical datasets from file names
 }
 orderedLevels <- sort(levels)  #numerical datasets from file names
-whichDatasets <- paste("c", levels, "p3", sep="")  #datasets from file names
-AllOrder <- paste("c", seq(5, 70, 5), "p3", sep="") #datasets from sequence
+whichDatasets <- paste("s", levels, "", sep="")  #datasets from file names
+AllOrder <- paste("s", seq(5, 65, 5), "", sep="") #datasets from sequence
 orderToGo <- AllOrder[AllOrder %in% whichDatasets]  #datasets of sequence that exist
-focalDatasets <- c("c5p3", "c25p3", "c45p3", "c65p3")
-#whichFocalDatasets <- focalDatasets[focalDatasets %in% whichDatasets]
-analyses <- c("RAxML", "MrBayes")
-
-setwd(mainDir)
-save(files, RAxML.trees, RAxML.TreeList, ML.results, ascgtr.treeMatrix, ascgtr.BL.AllTrees, ascfull.treeMatrix, ascfull.BL.AllTrees, MrBayes.trees, MrBayes.TreeList, MB.results, MB.ascgtr.treeMatrix, MB.ascgtr.BL.AllTrees, MB.ascfull.treeMatrix, MB.ascfull.BL.AllTrees, simTree, orderedLevels, orderToGo, focalDatasets, analyses, file="phrynoResults.Rdata")
+focalDatasets <- c("c5p3", "c25p3", "c55p3")
 
 
-#for figures comparing ASC-GTR or FULL:ASC:
-comp="FULLASC"
-#comp <- "ASCGTR"
-if(comp == "ASCGTR"){
-  BL.AllTrees.RAxML <- ascgtr.BL.AllTrees 
-  BL.AllTrees.MrBayes <- MB.ascgtr.BL.AllTrees
-  treeMatrices <- list(ascgtr.treeMatrix, MB.ascgtr.treeMatrix)
-}
-if(comp == "FULLASC"){
-  BL.AllTrees.RAxML <- ascfull.BL.AllTrees
-  BL.AllTrees.MrBayes <- MB.ascfull.BL.AllTrees
-  treeMatrices <- list(ascfull.treeMatrix, MB.ascfull.treeMatrix)
-}
+#setwd(mainDir)
+#save(files, RAxML.trees, RAxML.TreeList, ML.results, ascgtr.treeMatrix, ascgtr.BL.AllTrees, ascfull.treeMatrix, ascfull.BL.AllTrees, MrBayes.trees, MrBayes.TreeList, MB.results, MB.ascgtr.treeMatrix, MB.ascgtr.BL.AllTrees, MB.ascfull.treeMatrix, MB.ascfull.BL.AllTrees, orderedLevels, orderToGo, focalDatasets, analyses, file="phrynoResults.Rdata")
+
+
+# #for figures comparing ASC-GTR or FULL:ASC:
+# comp="FULLASC"
+# #comp <- "ASCGTR"
+# if(comp == "ASCGTR"){
+  # BL.AllTrees.RAxML <- ascgtr.BL.AllTrees 
+  # BL.AllTrees.MrBayes <- MB.ascgtr.BL.AllTrees
+  # treeMatrices <- list(ascgtr.treeMatrix, MB.ascgtr.treeMatrix)
+# }
+# if(comp == "FULLASC"){
+  # BL.AllTrees.RAxML <- ascfull.BL.AllTrees
+  # BL.AllTrees.MrBayes <- MB.ascfull.BL.AllTrees
+  # treeMatrices <- list(ascfull.treeMatrix, MB.ascfull.treeMatrix)
+# }
 
 
 ##  ----------------------------------------  ##
@@ -138,137 +113,13 @@ if(comp == "FULLASC"){
 #  If you want to start from here, you can load up the workspace with all the data.
 #load("phrynoResults.Rdata")
 
-#  Make Table 1. Simulation Branch Lengths -- complete data
-
-setwd(SimDir)
-fullrunTrees <- system("ls *bestTree*sim.full*", intern=TRUE)
-f <- lapply(fullrunTrees, read.tree)
-nonascTrees <- system("ls *bestTree*sim.nonasc*", intern=TRUE)
-n <- lapply(nonascTrees, read.tree)
-ascTrees <- system("ls *bestTree*sim.asc*", intern=TRUE)
-a <- lapply(ascTrees, read.tree)
-f.mean.topology <- mean(unlist(lapply(f, dist.topo, y=simTree)))
-n.mean.topology <- mean(unlist(lapply(n, dist.topo, y=simTree)))
-a.mean.topology <- mean(unlist(lapply(a, dist.topo, y=simTree)))
-
-f.edgeList <- NULL
-for(i in sequence(length(f))){
-  f.edgeList <- rbind(f.edgeList, GetEdgeList(f[[i]]))
-}
-n.edgeList <- NULL
-for(i in sequence(length(n))){
-  n.edgeList <- rbind(n.edgeList, GetEdgeList(n[[i]]))
-}
-a.edgeList <- NULL
-for(i in sequence(length(a))){
-  a.edgeList <- rbind(a.edgeList, GetEdgeList(a[[i]]))
-}
-
-all.edgeList <- list(f.edgeList=f.edgeList, n.edgeList=n.edgeList, a.edgeList=a.edgeList)
-branchs <- c("A", "B", "X", "C", "D")
-branchVals <- c(1, 2, 6, 3, 4)
-res <- matrix(nrow=5, ncol=3)
-rownames(res) <- paste("branch", branchs, sep="")
-colnames(res) <- c("full", "nonASC", "ASC")
-for(run in 1:3){
-  ind <- 0
-  for(i in branchVals){
-    ind <- ind+1
-    mean.branch <- mean(all.edgeList[[run]][which(all.edgeList[[run]][,2] == i),4])
-    sd.branch <- sd(all.edgeList[[run]][which(all.edgeList[[run]][,2] == i),4])
-    res[ind, run] <- paste0(round(mean.branch, digits=3), " (+/-", round(sd.branch, digits=3), ")")
-  }
-}
-newres <- cbind(simTree$edge.length, res)
-newres <- rbind(c("--", 100-f.mean.topology, 100-n.mean.topology, 100-a.mean.topology), newres)
-colnames(newres)[1] <- "true branch length"
-rownames(newres)[1] <- "topology"
-
-setwd(FigDir)
-write.table(newres, file="table1.txt")
+#  Table 1 was made by hand
 
 
-#  Make Table 2. Simulation Branch Lengths -- missing data
-
-setwd(SimDir)
-randMDascTrees <- system("ls *bestTree*randMD.asc*", intern=TRUE)
-randMDnonascTrees <- system("ls *bestTree*randMD.nonasc*", intern=TRUE)
-cdMDascTrees <- system("ls *bestTree*cdMD.asc*", intern=TRUE)
-cdMDnonascTrees <- system("ls *bestTree*cdMD.nonasc*", intern=TRUE)
-randMDfullTrees <- system("ls *bestTree*randomMD.full*", intern=TRUE)
-cdMDfullTrees <- system("ls *bestTree*cdMD.full*", intern=TRUE)
-
-randasc <- lapply(randMDascTrees, read.tree)
-randnonasc <- lapply(randMDnonascTrees, read.tree)
-randfull <- lapply(randMDfullTrees, read.tree)
-cdasc <- lapply(cdMDascTrees, read.tree)
-cdnonasc <- lapply(cdMDnonascTrees, read.tree)
-cdfull <- lapply(cdMDfullTrees, read.tree)
-
-#Make table with each branch (5 total) and topology
-a.mean.topology <- round(100-(mean(unlist(lapply(randfull, dist.topo, y=simTree)))*100), digits=1)
-b.mean.topology <- round(100-(mean(unlist(lapply(randnonasc, dist.topo, y= simTree)))*100), digits=1)
-c.mean.topology <- round(100-(mean(unlist(lapply(randasc, dist.topo, y=simTree)))*100), digits=1)
-d.mean.topology <- round(100-(mean(unlist(lapply(cdfull, dist.topo, y=simTree)))*100), digits=1)
-e.mean.topology <- round(100-(mean(unlist(lapply(cdnonasc, dist.topo, y=simTree)))*100), digits=1)
-f.mean.topology <- round(100-(mean(unlist(lapply(cdasc, dist.topo, y=simTree)))*100), digits=1)
-
-a.edgeList <- NULL
-for(i in sequence(length(randfull))){
-  a.edgeList <- rbind(a.edgeList, GetEdgeList(randfull[[i]]))
-}
-b.edgeList <- NULL
-for(i in sequence(length(randnonasc))){
-  b.edgeList <- rbind(b.edgeList, GetEdgeList(randnonasc[[i]]))
-}
-c.edgeList <- NULL
-for(i in sequence(length(randasc))){
-  c.edgeList <- rbind(c.edgeList, GetEdgeList(randasc[[i]]))
-}
-d.edgeList <- NULL
-for(i in sequence(length(cdfull))){
-  d.edgeList <- rbind(d.edgeList, GetEdgeList(cdfull[[i]]))
-}
-e.edgeList <- NULL
-for(i in sequence(length(cdnonasc))){
-  e.edgeList <- rbind(e.edgeList, GetEdgeList(cdnonasc[[i]]))
-}
-f.edgeList <- NULL
-for(i in sequence(length(cdasc))){
-  f.edgeList <- rbind(f.edgeList, GetEdgeList(cdasc[[i]]))
-}
-
-all.edgeList <- list(a.edgeList=a.edgeList, b.edgeList=b.edgeList, c.edgeList=c.edgeList, d.edgeList=d.edgeList, e.edgeList=e.edgeList, f.edgeList=f.edgeList)
-
-branchs <- c("A", "B", "X", "C", "D")
-branchVals <- c(1, 2, 6, 3, 4)
-res <- matrix(nrow=5, ncol=6)
-rownames(res) <- paste("branch", branchs, sep="")
-colnames(res) <- c("randfull", "randnonasc", "randasc", "cdfull", "cdnonasc", "cdasc")
-for(run in 1:length(all.edgeList)){
-  ind <- 0
-  for(i in branchVals){
-    ind <- ind+1
-    mean.branch <- round(mean(all.edgeList[[run]][which(all.edgeList[[run]][,2] == i),4]), digits=2)
-    sd.branch <- round(sd(all.edgeList[[run]][which(all.edgeList[[run]][,2] == i),4]), digits=2)
-    res[ind, run] <- paste0(round(mean.branch, digits=3), " (+/-", round(sd.branch, digits=3), ")")
-  }
-}
-newres <- cbind(simTree$edge.length, res)
-newres <- rbind(c("--", a.mean.topology, b.mean.topology, c.mean.topology, d.mean.topology, e.mean.topology, f.mean.topology), newres)
-colnames(newres)[1] <- "true branch length"
-rownames(newres)[1] <- "topology"
-
-setwd(FigDir)
-write.table(newres, file="table2.txt", quote=FALSE, sep=" &")
-
-#  Table 3 was made by hand
-
-
-#  Make Table 4. Summary ddRadSeq data. 
+#  Make Table 2. Summary ddRadSeq data. 
 
 setwd(phrynoDir)
-dataset <- seq(from=70, to=5, by=-5)
+dataset <- sort(orderedLevels, decreasing=TRUE)
 ASC.ML.results <- ML.results[which(ML.results[,2] == "ASC"),]
 table4 <- matrix(nrow=length(dataset), ncol=6)
 rownames(table4) <- paste("c", dataset, "p3", sep="")
@@ -382,7 +233,7 @@ write.table(table5, file="table5.txt", quote=FALSE, sep=" & ")
 #  Make Figure 2. Acquisition bias and tree length
 
 setwd(FigDir)
-pdf(file="Figure2.pdf", width=5, height=8.5)
+pdf(file="Figure2.pdf", width=5, height=5)
 layout(matrix(1:2, nrow=2, byrow=TRUE), respect=TRUE)
 gtrcol <- "black"
 asccol <- "gray"
@@ -390,7 +241,6 @@ fulcol <- "black"
 gtrpoint <- "black"
 ascpoint <- "gray"
 fulpoint <- "white"
-
 plot(rep(orderedLevels, 3), ML.results$TreeLength, type="n", ylab="Tree Length", xlab="Missing Data")
 title(main="RAxML")
 legend("topright", legend=c("Uncorrected", "Corrected", "All Sites"), col=c(gtrcol, asccol, fulcol), lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
@@ -429,6 +279,29 @@ for(i in sequence(length(orderToGo))){
   points(orderedLevels[i], MB.results$TreeLength[dataToUse[3]], pch=21, bg=fulpoint)
 }
 dev.off()
+
+#new Fig 2...AllSites, nonasc, vlewis, vstam, vfel
+setwd(FigDir)
+pdf(file="Figure2.pdf", width=5, height=8.5)
+cols <- rainbow(length(unique(ML.results$Model)))
+plot(rep(orderedLevels, length(unique(ML.results$Model))), ML.results$TreeLength, type="n", ylab="Tree Length", xlab="Missing Data")
+title(main="RAxML")
+legend("topright", legend=unique(ML.results$Model), col=cols, lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
+for(i in sequence(length(orderToGo)-1)){
+  dataToUse <- which(orderToGo[i] == ML.results$Level)
+  nextDataToUse <- which(orderToGo[i+1] == ML.results$Level)
+  for(j in sequence(unique(ML.results$Model))){
+    segments(orderedLevels[i], ML.results$TreeLength[dataToUse[j]], orderedLevels[i+1], ML.results$TreeLength[nextDataToUse[j]], col=cols[j])
+  }
+}
+for(i in sequence(length(orderToGo))){
+  dataToUse <- which(orderToGo[i] == ML.results$Level)
+  for(j in sequence(length(unique(ML.results$Model)))){
+    points(orderedLevels[i], ML.results$TreeLength[dataToUse[j]], pch=21, bg="white")
+  }
+}
+dev.off()
+
 
 
 #  Make Figure 3. Scatterplot branch lengths
@@ -674,6 +547,42 @@ if(analysis == "RAxML"){
 ##  ----------------------------------------  ##
 ##     End Double check RAxML Invocations     ##
 ##  ----------------------------------------  ##
+
+
+
+## Old MrBayes stuff:
+
+#  Load MrBayes Trees and post-analyses scraping  #not done YET...need to incorporate full too
+
+analysis <- "MrBayes"
+MrBayes.trees <- system(paste("ls *.con.tre", sep=""), intern=T)  
+MrBayes.TreeList <- CreateTreeList(MrBayes.trees, "MrBayes")
+MrBayes.TreeList <- lapply(MrBayes.TreeList, multi2di)  #remove later
+MrBayes.TreeList <- lapply(MrBayes.TreeList, ladderize)  #remove later
+MB.results <- GetMrBayesStatsPostAnalysis(".")  #will be warnings, because of missing analyses
+
+treeMatrix <- CreateTreeMatrix(MrBayes.trees)
+MB.ascgtr.treeMatrix <- AddTreeDist(treeMatrix[,-3], MrBayes.TreeList)
+MB.ascgtr.treeMatrix <- AddBLD(MB.ascgtr.treeMatrix, MrBayes.TreeList)
+MB.ascgtr.BL.AllTrees <- list()
+for(i in sequence(dim(MB.ascgtr.treeMatrix)[1])) {
+  tree1 <- assTrees(MB.ascgtr.treeMatrix[i,1], MrBayes.TreeList)[[1]]
+  tree2 <- assTrees(MB.ascgtr.treeMatrix[i,2], MrBayes.TreeList)[[1]]
+  MB.ascgtr.BL.AllTrees[[i]] <- MakeBranchLengthMatrix(tree1, tree2, analysis=analysis, dataset=rownames(treeMatrix)[i])
+  names(MB.ascgtr.BL.AllTrees)[[i]] <- rownames(treeMatrix)[i]
+}
+MB.ascfull.treeMatrix <- AddTreeDist(treeMatrix[,c(3,1)], MrBayes.TreeList)
+MB.ascfull.treeMatrix <- AddBLD(MB.ascfull.treeMatrix, MrBayes.TreeList)
+MB.ascfull.BL.AllTrees <- list()
+for(i in sequence(dim(MB.ascfull.treeMatrix)[1])) {
+  if(length(grep("NA", MB.ascfull.treeMatrix[i,1])) == 0){
+    tree1 <- assTrees(MB.ascfull.treeMatrix[i,1], MrBayes.TreeList)[[1]]
+    tree2 <- assTrees(MB.ascfull.treeMatrix[i,2], MrBayes.TreeList)[[1]]
+    MB.ascfull.BL.AllTrees[[i]] <- MakeBranchLengthMatrix(tree1, tree2, analysis=analysis, dataset=rownames(treeMatrix)[i])
+    names(MB.ascfull.BL.AllTrees)[[i]] <- rownames(treeMatrix)[i]
+  }
+}
+#MB.ascfull.BL.AllTrees <- MB.ascfull.BL.AllTrees[-c(which(names(MB.ascfull.BL.AllTrees) == "" ), which(is.na(names(MB.ascfull.BL.AllTrees))))]  #remove analyses that didn't finish (c5 and c10)
 
 
 
