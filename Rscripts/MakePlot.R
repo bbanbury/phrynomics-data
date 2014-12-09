@@ -29,8 +29,8 @@ table <- table[order(table$s),]
 plotmin <- min(table[,3]-table[,4])
 plotmax <- max(table[,3]+table[,4])+1
 
-linecols <- rainbow(5)
-pointcols <- rainbow(5)
+linecols <- rainbow(length(groups))
+pointcols <- rainbow(length(groups))
 
 pdf(file=outputFile, width=5, height=5)
 plot(table$s, table$mean, type="n", xlab="dataset", ylab="tree length", ylim=c(plotmin,plotmax))
