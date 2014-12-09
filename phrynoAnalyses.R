@@ -26,11 +26,6 @@ FigDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/FULLfigs2"
 
 setwd(phrynoDir)
 files <- system("ls s*noAmbigs.phy", intern=T)
-# analysis <- "RAxML"
-# RAxML.trees <- system("ls RAxML_bipartitions.*", intern=T)  #trees with bootstraps
-# RAxML.TreeList <- CreateTreeList(RAxML.trees, "RAxML")
-# RAxML.TreeList <- lapply(RAxML.TreeList, ladderize)
-# ML.results <- GetRAxMLStatsPostAnalysis(".")
 
 # treeMatrix <- CreateTreeMatrix(RAxML.trees)
 # ascgtr.treeMatrix <- AddTreeDist(treeMatrix[,-3], RAxML.TreeList)
@@ -61,7 +56,40 @@ RAxML.TreeList <- CreateTreeList(RAxML.trees, "RAxML")
 RAxML.TreeList <- lapply(RAxML.TreeList, ladderize)
 ML.results <- GetRAxMLStatsPostAnalysis2(".")
 
+treeMatrix <- CreateTreeMatrix(RAxML.trees)
 
+# full - nonASC
+whichRuns <- c("full", "nonASC")
+full.nonASC.treeMatrix <- AddBLD(AddTreeDist(treeMatrix[which(colnames(treeMatrix) %in% whichRuns)], RAxML.TreeList), RAxML.TreeList)
+fullnonASC.branchComp <- list()
+for(i in sequence(dim(full.nonASC.treeMatrix)[1])) {
+  tree1 <- assTrees(full.nonASC.treeMatrix[i, which(colnames(full.nonASC.treeMatrix) == whichRuns[1])], RAxML.TreeList)[[1]]
+  tree2 <- assTrees(full.nonASC.treeMatrix[i, which(colnames(full.nonASC.treeMatrix) == whichRuns[2])], RAxML.TreeList)[[1]]
+  fullnonASC.branchComp[[i]] <- MakeBranchLengthMatrix(tree1, tree2, dataset=rownames(full.nonASC.treeMatrix)[i])
+  names(fullnonASC.branchComp)[[i]] <- rownames(full.nonASC.treeMatrix)[i]
+}
+
+# full - lewis
+whichRuns <- c("full", "lewis")
+full.lewis.treeMatrix <- AddBLD(AddTreeDist(treeMatrix[which(colnames(treeMatrix) %in% whichRuns)], RAxML.TreeList), RAxML.TreeList)
+fulllewis.branchComp <- list()
+for(i in sequence(dim(full.lewis.treeMatrix)[1])) {
+  tree1 <- assTrees(full.lewis.treeMatrix[i, which(colnames(full.lewis.treeMatrix) == whichRuns[1])], RAxML.TreeList)[[1]]
+  tree2 <- assTrees(full.lewis.treeMatrix[i, which(colnames(full.lewis.treeMatrix) == whichRuns[2])], RAxML.TreeList)[[1]]
+  fulllewis.branchComp[[i]] <- MakeBranchLengthMatrix(tree1, tree2, dataset=rownames(full.lewis.treeMatrix)[i])
+  names(fulllewis.branchComp)[[i]] <- rownames(full.lewis.treeMatrix)[i]
+}
+
+# full - stam
+whichRuns <- c("full", "stam")
+full.stam.treeMatrix <- AddBLD(AddTreeDist(treeMatrix[which(colnames(treeMatrix) %in% whichRuns)], RAxML.TreeList), RAxML.TreeList)
+fullstam.branchComp <- list()
+for(i in sequence(dim(full.stam.treeMatrix)[1])) {
+  tree1 <- assTrees(full.stam.treeMatrix[i, which(colnames(full.stam.treeMatrix) == whichRuns[1])], RAxML.TreeList)[[1]]
+  tree2 <- assTrees(full.stam.treeMatrix[i, which(colnames(full.stam.treeMatrix) == whichRuns[2])], RAxML.TreeList)[[1]]
+  fullstam.branchComp[[i]] <- MakeBranchLengthMatrix(tree1, tree2, dataset=rownames(full.stam.treeMatrix)[i])
+  names(fullstam.branchComp)[[i]] <- rownames(full.stam.treeMatrix)[i]
+}
 
 
 
@@ -75,26 +103,12 @@ orderedLevels <- sort(levels)  #numerical datasets from file names
 whichDatasets <- paste("s", levels, "", sep="")  #datasets from file names
 AllOrder <- paste("s", seq(5, 65, 5), "", sep="") #datasets from sequence
 orderToGo <- AllOrder[AllOrder %in% whichDatasets]  #datasets of sequence that exist
-focalDatasets <- c("c5p3", "c25p3", "c55p3")
+focalDatasets <- c("s5", "s25", "s50")
 
 
 #setwd(mainDir)
 #save(files, RAxML.trees, RAxML.TreeList, ML.results, ascgtr.treeMatrix, ascgtr.BL.AllTrees, ascfull.treeMatrix, ascfull.BL.AllTrees, MrBayes.trees, MrBayes.TreeList, MB.results, MB.ascgtr.treeMatrix, MB.ascgtr.BL.AllTrees, MB.ascfull.treeMatrix, MB.ascfull.BL.AllTrees, orderedLevels, orderToGo, focalDatasets, analyses, file="phrynoResults.Rdata")
 
-
-# #for figures comparing ASC-GTR or FULL:ASC:
-# comp="FULLASC"
-# #comp <- "ASCGTR"
-# if(comp == "ASCGTR"){
-  # BL.AllTrees.RAxML <- ascgtr.BL.AllTrees 
-  # BL.AllTrees.MrBayes <- MB.ascgtr.BL.AllTrees
-  # treeMatrices <- list(ascgtr.treeMatrix, MB.ascgtr.treeMatrix)
-# }
-# if(comp == "FULLASC"){
-  # BL.AllTrees.RAxML <- ascfull.BL.AllTrees
-  # BL.AllTrees.MrBayes <- MB.ascfull.BL.AllTrees
-  # treeMatrices <- list(ascfull.treeMatrix, MB.ascfull.treeMatrix)
-# }
 
 
 ##  ----------------------------------------  ##
@@ -119,18 +133,18 @@ focalDatasets <- c("c5p3", "c25p3", "c55p3")
 #  Make Table 2. Summary ddRadSeq data. 
 
 setwd(phrynoDir)
-dataset <- sort(orderedLevels, decreasing=TRUE)
-ASC.ML.results <- ML.results[which(ML.results[,2] == "ASC"),]
-table4 <- matrix(nrow=length(dataset), ncol=6)
-rownames(table4) <- paste("c", dataset, "p3", sep="")
+toGo <- sort(orderedLevels, decreasing=TRUE)
+full.ML.results <- ML.results[which(ML.results[,2] == "full"),]
+table4 <- matrix(nrow=length(toGo), ncol=6)
+rownames(table4) <- paste("s", toGo, sep="")
 colnames(table4) <- c("Matrix", "Loci", "VariableSites", "Missing(%)", "PhrynoOverlap", "non-PhrynoOverlap")
-table4[,1] <- paste("s", dataset, sep="")
-rows <- match(ASC.ML.results[,1], rownames(table4))
+table4[,1] <- paste("s", toGo, sep="")
+rows <- match(full.ML.results[,1], rownames(table4))
 table4 <- table4[!is.na(rows),]  
-table4[,c(2,3,4)] <- as.matrix(ASC.ML.results[order(rows[which(!is.na(rows))]), c(3,4,6)])
+table4[,c(2,3,4)] <- as.matrix(full.ML.results[order(rows[which(!is.na(rows))]), c(3,4,6)])
 dataOverlap <- list()
 for(i in sequence(length(files))){
-  dataset <- read.table(files[[i]], row.names=1, colClasses="character", skip=1)
+  dataset <- ReadSNP(files[[i]], fileFormat="phy", extralinestoskip=1)
   dataOverlap[[i]] <- DataOverlap(dataset)[[2]]
   names(dataOverlap)[[i]] <- strsplit(strsplit(files[i], "/")[[1]][length(strsplit(files[i], "/")[[1]])], "no")[[1]][1]
 }
@@ -140,20 +154,19 @@ for(m in sequence(dim(table4)[1])){
   table4[m,5] <- round(mean(dataOverlap[[whichDataset]][grep(pattern="PH", names(dataOverlap[[whichDataset]]))]), digits=2)
 }
 setwd(FigDir)
-write.table(table4, file="table4.txt", quote=FALSE, row.names=FALSE)  
+write.table(table4, file="table2.txt", quote=FALSE, row.names=FALSE)  
 
 
-#  Table 5. Support for Clades
+#  Table 3. Support for Clades
 
 setwd(phrynoDir)
-RAxTrees <- RAxML.TreeList[grep("c5p3|c25p3|c45p3|c65p3", names(RAxML.TreeList))]
-MrBTrees <- MrBayes.TreeList[grep("c5p3|c25p3|c45p3|c65p3", names(MrBayes.TreeList))]
-ascRAxTrees <- RAxTrees[grep("ASC", names(RAxTrees))]
-gtrRAxTrees <- RAxTrees[grep("3_GTR", names(RAxTrees))]
-fullRAxTrees <- RAxTrees[grep("full", names(RAxTrees))]
-ascMrBTrees <- MrBTrees[grep("ASC", names(MrBTrees))]
-gtrMrBTrees <- MrBTrees[grep("GTR_", names(MrBTrees))]
-fullMrBTrees <- MrBTrees[grep("^c", names(MrBTrees))] 
+subtrees <- RAxML.TreeList[grep("s50|s25|s5", names(RAxML.TreeList))]
+subtrees <- subtrees[-grep("s55", names(subtrees))]  #grep pulls s50 with s5
+subtreeLevels <- paste0("s", c(50, 25, 5))
+trees50 <- subtrees[grep("s50", names(subtrees))]
+trees25 <- subtrees[grep("s25", names(subtrees))]
+trees5 <- subtrees[grep("s5", names(subtrees))]
+trees5 <- trees5[-grep("s50", names(trees5))]
 
 Sceloporus <- c("SCMA1", "SCOC1", "SCGA1", "SCAN1")
 Sceloporinae <- c(Sceloporus, "UROR1", "URBI1", "UTST1")
@@ -164,32 +177,24 @@ Anota <- c("PHMC1", "PHMC3", "PHMC2", "PHMC4", "PHSO3", "PHSO2", "PHSO1", "PHCE1
 Phrynosomatini <- c("PHAS4", "PHAS1", "PHAS3", "PHAS2", Anota, "PHCN1", "PHCN2", "PHCN3", "PHCN4", Brevicauda, Doliosaurus, Tapaja)
 Callisaurini <- c("COTE1", "HOMA1", "CADR1", "CADR2")
 Phrynosomatinae <- c(Callisaurini, Phrynosomatini)
+HolbrookiaCalli <- c("HOMA1", "CADR1", "CADR2")
+HolbrookiaCopho <- c("HOMA1", "COTE1")
 
-clades <- list(Sceloporinae=Sceloporinae, Phrynosomatinae=Phrynosomatinae, Callisaurini=Callisaurini, Phrynosomatini=Phrynosomatini, Anota=Anota, Brevicauda=Brevicauda, Doliosaurus=Doliosaurus, Tapaja=Tapaja, Sceloporus=Sceloporus)
+clades <- list(Sceloporinae=Sceloporinae, Phrynosomatinae=Phrynosomatinae, Callisaurini=Callisaurini, HolbrookiaCalli=HolbrookiaCalli, HolbrookiaCopho=HolbrookiaCopho, Phrynosomatini=Phrynosomatini, Anota=Anota, Brevicauda=Brevicauda, Doliosaurus=Doliosaurus, Tapaja=Tapaja, Sceloporus=Sceloporus)
 
-table5 <- matrix(nrow=length(clades), ncol=8)
-rownames(table5) <- names(clades)
-colnames(table5) <- paste0(rep(c("ML-", "BI-"), 4), c(rep("s65",2), rep("s45",2), rep("s25",2), rep("s5",2)))
+table3 <- matrix(nrow=length(clades), ncol=4)
+rownames(table3) <- names(clades)
+colnames(table3) <- c("full", "nonASC", "lewis", "stam")
 
-for(i in sequence(dim(table5)[1])){
-  taxa <- clades[[which(names(clades) == rownames(table5)[i])]]
-  for(col in sequence(dim(table5)[2])){
-    colnam <- colnames(table5)[col]
-    level <- strsplit(colnam, "-")[[1]][2]
-    level <- gsub("s", "c", level)
+for(i in sequence(dim(table3)[1])){
+  taxa <- clades[[which(names(clades) == rownames(table3)[i])]]
+  for(col in sequence(dim(table3)[2])){
+    colnam <- colnames(table3)[col]
     threeVals <- rep("--", 3)
-    if(length(grep("ML", colnam)) > 0){
-      ascTr <- ascRAxTrees[[grep(level, names(ascRAxTrees))]]
-      gtrTr <- gtrRAxTrees[[grep(level, names(gtrRAxTrees))]]
-      fulTr <- fullRAxTrees[[grep(level, names(fullRAxTrees))]]
-    }
-    if(length(grep("BI", colnam)) > 0){
-      ascTr <- ascMrBTrees[[grep(level, names(ascMrBTrees))]]
-      gtrTr <- gtrMrBTrees[[grep(level, names(gtrMrBTrees))]]
-      if(length(grep(level, names(fullMrBTrees))) > 0)  #some analyses not done
-        fulTr <- fullMrBTrees[[grep(level, names(fullMrBTrees))]]
-    }
-    trees <- c(fulTr, gtrTr, ascTr)
+    tree50 <- trees50[[grep(colnam, names(trees50))]]
+    tree25 <- trees25[[grep(colnam, names(trees25))]]
+    tree5 <- trees5[[grep(colnam, names(trees5))]]
+    trees <- c(tree50, tree25, tree5)
     for(num in 1:3){
       tree <- trees[[num]]
       mrca <- getMRCA(tree, taxa)
@@ -199,16 +204,12 @@ for(i in sequence(dim(table5)[1])){
         sup <- EL[which(EL[,2] == mrca), 5]
         threeVals[num] <- sup
       }
-      if(length(grep("BI", colnam)) > 0){
-        if(length(grep(level, names(fullMrBTrees))) == 0)
-          threeVals[1] <- NA
-      }
     }
-    table5[i,col] <- paste(threeVals, collapse="/")
+    table3[i,col] <- paste(threeVals, collapse="/")
   }
 }
 setwd(FigDir)
-write.table(table5, file="table5.txt", quote=FALSE, sep=" & ")
+write.table(table3, file="table3.txt", quote=FALSE, sep=" & ")
  
 
   
@@ -233,55 +234,6 @@ write.table(table5, file="table5.txt", quote=FALSE, sep=" & ")
 #  Make Figure 2. Acquisition bias and tree length
 
 setwd(FigDir)
-pdf(file="Figure2.pdf", width=5, height=5)
-layout(matrix(1:2, nrow=2, byrow=TRUE), respect=TRUE)
-gtrcol <- "black"
-asccol <- "gray"
-fulcol <- "black"
-gtrpoint <- "black"
-ascpoint <- "gray"
-fulpoint <- "white"
-plot(rep(orderedLevels, 3), ML.results$TreeLength, type="n", ylab="Tree Length", xlab="Missing Data")
-title(main="RAxML")
-legend("topright", legend=c("Uncorrected", "Corrected", "All Sites"), col=c(gtrcol, asccol, fulcol), lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
-for(i in sequence(length(orderToGo)-1)){
-  dataToUse <- which(orderToGo[i] == ML.results$Level)
-  nextDataToUse <- which(orderToGo[i+1] == ML.results$Level)
-  segments(orderedLevels[i], ML.results$TreeLength[dataToUse[1]], orderedLevels[i+1], ML.results$TreeLength[nextDataToUse[1]], col=asccol)
-  segments(orderedLevels[i], ML.results$TreeLength[dataToUse[2]], orderedLevels[i+1], ML.results$TreeLength[nextDataToUse[2]], col=gtrcol)  
-  segments(orderedLevels[i], ML.results$TreeLength[dataToUse[3]], orderedLevels[i+1], ML.results$TreeLength[nextDataToUse[3]], col=fulcol)  
-}
-for(i in sequence(length(orderToGo))){
-  dataToUse <- which(orderToGo[i] == ML.results$Level)
-  points(orderedLevels[i], ML.results$TreeLength[dataToUse[1]], pch=21, bg=ascpoint)
-  points(orderedLevels[i], ML.results$TreeLength[dataToUse[2]], pch=21, bg=gtrpoint)
-  points(orderedLevels[i], ML.results$TreeLength[dataToUse[3]], pch=21, bg=fulpoint)
-}
-Ymin <- min(MB.results$TreeLength.lowCI, na.rm=TRUE)
-Ymax <- max(MB.results$TreeLength.uppCI, na.rm=TRUE)
-plot(rep(orderedLevels, 3), MB.results$TreeLength, type="n", ylab="Tree Length", xlab="Missing Data", ylim=c(Ymin, Ymax))
-title(main="MrBayes")
-legend("topright", legend=c("Uncorrected", "Corrected", "All Sites"), col=c(gtrcol, asccol, fulcol), lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
-for(i in sequence(length(orderToGo)-1)){ 
-  dataToUse <- which(orderToGo[i] == MB.results$Level)
-  nextDataToUse <- which(orderToGo[i+1] == MB.results$Level)
-  segments(orderedLevels[i], MB.results$TreeLength[dataToUse[1]], orderedLevels[i+1], MB.results$TreeLength[nextDataToUse[1]], col=asccol)
-  segments(orderedLevels[i], MB.results$TreeLength[dataToUse[2]], orderedLevels[i+1], MB.results$TreeLength[nextDataToUse[2]], col=gtrcol)  
-  segments(orderedLevels[i], MB.results$TreeLength[dataToUse[3]], orderedLevels[i+1], MB.results$TreeLength[nextDataToUse[3]], col=fulcol)  
-}
-for(i in sequence(length(orderToGo))){
-  dataToUse <- which(orderToGo[i] == MB.results$Level)
-  arrows(orderedLevels[i], MB.results$TreeLength.lowCI[dataToUse[1]], orderedLevels[i], MB.results$TreeLength.uppCI[dataToUse[1]], code=3, length=0.05, col=asccol, angle=90)
-  arrows(orderedLevels[i], MB.results$TreeLength.lowCI[dataToUse[2]], orderedLevels[i], MB.results$TreeLength.uppCI[dataToUse[2]], code=3, length=0.05, col=gtrcol, angle=90)
-  arrows(orderedLevels[i], MB.results$TreeLength.lowCI[dataToUse[3]], orderedLevels[i], MB.results$TreeLength.uppCI[dataToUse[3]], code=3, length=0.05, col=fulcol, angle=90)
-  points(orderedLevels[i], MB.results$TreeLength[dataToUse[1]], pch=21, bg=ascpoint)
-  points(orderedLevels[i], MB.results$TreeLength[dataToUse[2]], pch=21, bg=gtrpoint)
-  points(orderedLevels[i], MB.results$TreeLength[dataToUse[3]], pch=21, bg=fulpoint)
-}
-dev.off()
-
-#new Fig 2...AllSites, nonasc, vlewis, vstam, vfel
-setwd(FigDir)
 pdf(file="Figure2.pdf", width=5, height=8.5)
 cols <- rainbow(length(unique(ML.results$Model)))
 plot(rep(orderedLevels, length(unique(ML.results$Model))), ML.results$TreeLength, type="n", ylab="Tree Length", xlab="Missing Data")
@@ -303,7 +255,6 @@ for(i in sequence(length(orderToGo))){
 dev.off()
 
 
-
 #  Make Figure 3. Scatterplot branch lengths
 
 setwd(FigDir)
@@ -311,37 +262,34 @@ usr2dev <- function(x) 180/pi*atan(x*diff(par("usr")[1:2])/diff(par("usr")[3:4])
 getX <- function(y, linmod) (y-linmod$coefficients[1])/linmod$coefficients[2]  #(y -b)/m = x
 pdf(file="Figure3.pdf", width=8.5, height=5)
 op <- par(mar=par("mar")/1.7)
-layout(matrix(1:8, nrow=2, byrow=TRUE), respect=TRUE)  
+layout(matrix(1:6, nrow=2, byrow=TRUE), respect=TRUE)  
+analyses <- focalDatasets[c(3,1)]
 for(anal in 1:length(analyses)){
   whichAnalysis <- analyses[anal] 
-  if(whichAnalysis == "RAxML")
-    BL.AllTrees <- BL.AllTrees.RAxML
-  if(whichAnalysis == "MrBayes")
-    BL.AllTrees <- BL.AllTrees.MrBayes
-  currmax <- 0
-  for(i in sequence(length(focalDatasets))){
-    dataToUse <- which(focalDatasets[i] == names(BL.AllTrees))
-    if(length(dataToUse) > 0)
-      currmax <- max(c(currmax, BL.AllTrees[[dataToUse]]$branchlength[which(BL.AllTrees[[dataToUse]]$present)], BL.AllTrees[[dataToUse]]$corr.BL[which(BL.AllTrees[[dataToUse]]$present)]))
+  data1 <- which(whichAnalysis == names(fullnonASC.branchComp))
+  data2 <- which(whichAnalysis == names(fulllewis.branchComp))
+  data3 <- which(whichAnalysis == names(fullstam.branchComp))
+  BLs1 <- fullnonASC.branchComp[[data1]]$branchlength[which(fullnonASC.branchComp[[data1]]$present)]
+  corr.BLs1 <- fullnonASC.branchComp[[data1]]$corr.BL[which(fullnonASC.branchComp[[data1]]$present)]
+  BLs2 <- fulllewis.branchComp[[data2]]$branchlength[which(fulllewis.branchComp[[data2]]$present)]
+  corr.BLs2 <- fulllewis.branchComp[[data2]]$corr.BL[which(fulllewis.branchComp[[data2]]$present)]
+  BLs3 <- fullstam.branchComp[[data3]]$branchlength[which(fullstam.branchComp[[data3]]$present)]
+  corr.BLs3 <- fullstam.branchComp[[data3]]$corr.BL[which(fullstam.branchComp[[data3]]$present)]
+  BLs <- list(nonASC=BLs1, lewis=BLs2, stam=BLs3)    
+  corr.BLs <- list(nonASC=corr.BLs1, lewis=corr.BLs2, stam=corr.BLs3)
+  for(plotty in sequence(length(BLs))){
+    print(paste("you are at", plotty))
+    maxlims <- max(BLs[[plotty]], corr.BLs[[plotty]])
+    plot(BLs[[plotty]], corr.BLs[[plotty]], pch=21, bg="gray", xlab="full", ylab=names(BLs)[plotty], xlim=c(0, maxlims), ylim=c(0, maxlims), type="n")
+    linmod <- lm(corr.BLs[[plotty]] ~ BLs[[plotty]])
+    abline(linmod, lty=2)
+    y <- 0.18
+    points(getX(y, linmod), y, col="white", pch=21, bg="white", cex=12, crt=usr2dev(linmod$coefficients[2]))
+    points(BLs[[plotty]], corr.BLs[[plotty]], pch=21, bg="gray")
+    text(x=getX(y, linmod), y=y, paste("m =", round(linmod$coefficients[2], digits=2)), srt=usr2dev(linmod$coefficients[2]))
+    lines(c(-1,1), c(-1,1))
   }
-  for(i in sequence(length(focalDatasets))){
-    dataToUse <- which(focalDatasets[i] == names(BL.AllTrees))
-    if(length(dataToUse) == 0)
-      plot(1:10, 1:10, type="n", axes=FALSE, frame.plot=FALSE, ylab="", xlab="")
-    else {
-      BLs <- BL.AllTrees[[dataToUse]]$branchlength[which(BL.AllTrees[[dataToUse]]$present)]
-      corr.BLs <- BL.AllTrees[[dataToUse]]$corr.BL[which(BL.AllTrees[[dataToUse]]$present)]
-      plot(BLs, corr.BLs, pch=21, bg="gray", ylim=c(0, currmax+currmax*.1), xlim=c(0, currmax+currmax*.1), xlab="ASC", ylab="non-ASC", type="n")
-      linmod <- lm(corr.BLs ~ BLs)
-      abline(linmod, lty=2)
-      y <- 0.18
-      points(getX(y, linmod), y, col="white", pch=21, bg="white", cex=12, crt=usr2dev(linmod$coefficients[2]))
-      points(BLs, corr.BLs, pch=21, bg="gray")
-      text(x=getX(y, linmod), y=y, paste("m =", round(linmod$coefficients[2], digits=2)), srt=usr2dev(linmod$coefficients[2]))
-      lines(c(-1,1), c(-1,1))
-      title(main=paste("s", strsplit(focalDatasets[[i]], "\\D")[[1]][2], sep=""))
-    }
-  }
+  title(main=analyses[anal])
 }
 dev.off()
 

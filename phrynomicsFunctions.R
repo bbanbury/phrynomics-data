@@ -119,23 +119,29 @@ CreateTreeList <- function(filenames, analysis="RAxML"){
   return(TreeList)
 }
 
+GetAnalysis <- function(fileName){
+  return(strsplit(fileName, "[._]")[[1]][3])
+}
+
 CreateTreeMatrix <- function(trees) {
 #Creates a matrix of file names that correspons to missing data amounts (rows) and model (cols)
 #GTRorFULL will create the tree matrix comparison with either ASC and GTR data or ASC and full data.
   missingDataTypes <- sapply(trees, getMissingDataAmount)
-  ASCtrees <- grep("ASC_", trees)
-  GTRtrees <- c(grep("3_GTR", trees), grep("GTR_", trees))
-  FULLtrees <- c(grep("full", trees), grep("c*p3.nex", trees))
-  treeMatrix <- matrix(nrow=length(unique(missingDataTypes)), ncol=3)
-  rownames(treeMatrix) <- paste("c", unique(missingDataTypes), "p3", sep="")
-  colnames(treeMatrix) <- c("ASC", "GTR", "full")
+  analy <- sapply(trees, GetAnalysis)
+  runs <- unique(analy)
+  #ASCtrees <- grep("ASC_", trees)
+  #GTRtrees <- c(grep("3_GTR", trees), grep("GTR_", trees))
+  #FULLtrees <- c(grep("full", trees), grep("c*p3.nex", trees))
+  treeMatrix <- matrix(nrow=length(unique(missingDataTypes)), ncol=length(runs))
+  rownames(treeMatrix) <- paste("s", unique(missingDataTypes), sep="")
+  colnames(treeMatrix) <- runs
   for(i in sequence(dim(treeMatrix)[1])) {
-    threeFiles <- trees[grep(rownames(treeMatrix)[i], trees, fixed=TRUE)]
-    if(length(threeFiles) == 2){
-      if(length(threeFiles[grep("full", threeFiles)]) == 0)
-        threeFiles <- c(threeFiles, paste0(rownames(treeMatrix)[i], "NA.nex"))
+    multFiles <- trees[missingDataTypes == sub("s", "", rownames(treeMatrix)[i])]
+    tt <- NULL
+    for(j in sequence(length(runs))){
+      tt <- c(tt, grep(runs[j], multFiles))
     }
-    treeMatrix[i,] <- c(threeFiles[grep("ASC", threeFiles)], threeFiles[c(grep("3_GTR", threeFiles), grep("GTR_", threeFiles))], threeFiles[c(grep("full", threeFiles), grep("c*p3.nex", threeFiles), grep("NA.nex", threeFiles))])
+    treeMatrix[i,] <- multFiles[tt]
   }
   return(as.data.frame(treeMatrix, stringsAsFactors=FALSE))
 }
