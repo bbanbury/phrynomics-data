@@ -278,7 +278,7 @@ GetSingleEdgeColor <- function(relativeBLdiff, scale=1) {
     else if (relativeBLdiff < -25) return(rgb(51,255,241, maxColorValue=255))
     else if (relativeBLdiff <= 0) return("gray")  #plus/minus 50%
     else if(relativeBLdiff < 25) return("gray")
-    else if (relativeBLdiff > 25) return(rgb(196,156,100, max=255) #overestimate over 25%
+    else if (relativeBLdiff > 25) return(rgb(196,156,100, maxColorValue =255)) #overestimate over 25%
     else return(rgb(153,0,0, maxColorValue=255))
   }
 }
@@ -608,6 +608,12 @@ GetRAxMLStatsPostAnalysis <- function(workingDirectoryOfResults) {
   return(results)
 }
 
+GetTime <- function(RAxML_infofile){
+  line <- system(paste("grep 'ML search took '", RAxML_infofile), intern=TRUE)[1]
+  line <- gsub("[a-zA-Z]", "", line)
+  secs <- strsplit(line, split=" +")[[1]][2]
+  return(as.numeric(secs))
+}
 
 GetLinesToSkip <- function(file){
   return(length(suppressWarnings(system(paste("grep 'ID:' ", file, sep=""), intern=TRUE))))

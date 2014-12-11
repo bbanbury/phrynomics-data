@@ -206,10 +206,13 @@ write.table(table3, file="table3.txt", quote=FALSE, sep=" & ")
 ##  ----------------------------------------  ##
 
 
-#  Figure 1 was made by hand
+#  Figure 1 -- Simulation, done using Rscripts
 
 
-#  Make Figure 2. Acquisition bias and tree length
+#  Figure 2 -- Phylogeny for group, made by hand
+
+
+#  Make Figure 3. Tree length comparisons
 
 setwd(FigDir)
 pdf(file="Figure2.pdf", width=5, height=5)
@@ -233,7 +236,7 @@ for(i in sequence(length(orderToGo))){
 dev.off()
 
 
-#  Make Figure 3. Scatterplot branch lengths
+#  Make Figure 4. Scatterplot branch lengths
 
 setwd(FigDir)
 usr2dev <- function(x) 180/pi*atan(x*diff(par("usr")[1:2])/diff(par("usr")[3:4]))
@@ -272,7 +275,7 @@ for(anal in 1:length(analyses)){
 dev.off()
 
 
-#  Figure 4a. Colored branch SNP phylogenies -- All vs lewis
+#  Figure 5a. Colored branch SNP phylogenies -- All vs lewis
 
 setwd(FigDir)
 pdf(file="Figure4a.pdf", width=11, height=5)
@@ -299,7 +302,7 @@ for(fig in treeFigDatasets){
 dev.off()
 
 
-#  Figure 4b. Colored branch SNP phylogenies -- All vs stam
+#  Figure 5b. Colored branch SNP phylogenies -- All vs stam
 
 setwd(FigDir)
 pdf(file="Figure4b.pdf", width=11, height=5)
@@ -324,8 +327,6 @@ for(fig in treeFigDatasets){
   title(main= whichAnalysis)
 }
 dev.off()
-
-
 
 
 
@@ -364,6 +365,8 @@ for(whichAnalysis in focalDatasets[c(3,1)]){
 }
 dev.off()
 
+
+#  Figure 7 -- Time
 
 
 
