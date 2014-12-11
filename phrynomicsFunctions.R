@@ -260,15 +260,27 @@ GetCorresonding <- function(corr.desc, t2){
   return(t2[which(t2$desc == corr.desc),])
 }
 
-GetSingleEdgeColor <- function(relativeBLdiff) {
-  if(is.na(relativeBLdiff))  return(NA)
-  else if (relativeBLdiff < -10) return(rgb(51,51,255, maxColorValue =255)) #underestimate over 10%
-  else if (relativeBLdiff <= 10) return("gray")  #plus/minus 10%
-  else if (relativeBLdiff < 20) return(rgb(255,255,102, maxColorValue=255))
-  else if (relativeBLdiff < 30) return(rgb(255,178,102, maxColorValue=255))
-  else if (relativeBLdiff < 40) return(rgb(225,128,0, maxColorValue=255))
-  else if (relativeBLdiff < 50) return(rgb(225,0,0, maxColorValue=255))
-  else return(rgb(153,0,0, maxColorValue=255))	  
+GetSingleEdgeColor <- function(relativeBLdiff, scale=1) {
+  if(scale == 1){
+    if(is.na(relativeBLdiff))  return(NA)
+    else if (relativeBLdiff < -100) return(rgb(51,51,255, maxColorValue =255)) #underestimate over 10%
+    else if (relativeBLdiff <= 100) return("gray")  #plus/minus 10%
+    else if (relativeBLdiff < 200) return(rgb(255,255,102, maxColorValue=255))
+    else if (relativeBLdiff < 300) return(rgb(255,178,102, maxColorValue=255))
+    else if (relativeBLdiff < 400) return(rgb(225,128,0, maxColorValue=255))
+    else if (relativeBLdiff < 500) return(rgb(225,0,0, maxColorValue=255))
+    else return(rgb(153,0,0, maxColorValue=255))	  
+  }
+  if(scale == 2){
+    if(is.na(relativeBLdiff))  return(NA)
+    else if (relativeBLdiff < -100) return(rgb(51,51,255, maxColorValue=255))
+    else if (relativeBLdiff < -50) return(rgb(51,194,255, maxColorValue =255))
+    else if (relativeBLdiff < -25) return(rgb(51,255,241, maxColorValue=255))
+    else if (relativeBLdiff <= 0) return("gray")  #plus/minus 50%
+    else if(relativeBLdiff < 25) return("gray")
+    else if (relativeBLdiff > 25) return(rgb(196,156,100, max=255) #overestimate over 25%
+    else return(rgb(153,0,0, maxColorValue=255))
+  }
 }
 #GetSingleEdgeColor(30)
 
@@ -284,6 +296,14 @@ ReturnMaxCI <- function(x, vstat){
   else return(0)
 }
 
+remove_outliers <- function(x, na.rm = TRUE, ...) {
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
+  H <- 1.5 * IQR(x, na.rm = na.rm)
+  y <- x
+  y[x < (qnt[1] - H)] <- NA
+  y[x > (qnt[2] + H)] <- NA
+  return(y[-which(is.na(y))])
+}
 
 MakeBranchLengthMatrix <- function(tree1, tree2, analysis="RAxML", dataset=NULL){  
   t1 <- GetEdgeList(tree1) 
@@ -301,7 +321,8 @@ MakeBranchLengthMatrix <- function(tree1, tree2, analysis="RAxML", dataset=NULL)
   t1$BL.DIFF <- t1$corr.BL - t1$branchlength #tree B - tree A
   t1$BL.DIFF[which(!t1$present)] <- 0  #remove data when not comparable
   t1$relativeBLdiff <- (t1$BL.DIFF / t1$branchlength) * 100
-  t1$edgeColor <- sapply(t1$relativeBLdiff, GetSingleEdgeColor)
+  t1$edgeColor1 <- sapply(t1$relativeBLdiff, GetSingleEdgeColor, scale=1)
+  t1$edgeColor2 <- sapply(t1$relativeBLdiff, GetSingleEdgeColor, scale=2)
   t1$edgelty <- rep(3, dim(t1)[1])
   t1$edgelty[which(t1$present)] <- 1
   if(analysis == "MrBayes"){
@@ -536,55 +557,8 @@ GetRFmatrix <- function(analysis) {
 #######    Post Analysis Scraping   ############
 ################################################
 
-GetRAxMLStatsPostAnalysis <- function(workingDirectoryOfResults) {
-  startingDir <- getwd()
-  setwd(workingDirectoryOfResults)
-  vFiles <- system(paste("ls c*noAmbigs.snps"), intern=T)
-  cFiles <- system(paste("ls c*p3.snps"), intern=T)
-  outFiles <- system("ls RAxML_info*", intern=T)
-  results <- matrix(nrow=length(outFiles), ncol=10)
-  for(i in sequence(length(outFiles))){
-    if(length(grep("full", outFiles[i])) > 0){
-      MissingDataLevel <- strsplit(strsplit(outFiles[i], "_")[[1]][3], ".phy")[[1]]
-      whichModel <- strsplit(outFiles[i], "_")[[1]][2]
-      SNPdataset <- ReadSNP(cFiles[grep(MissingDataLevel, cFiles)], fileFormat="phy")
-      VariableSites <- sum(SNPdataset$nsites)
-      numberLoci <- SNPdataset$nloci
-    }
-    if(length(grep("full", outFiles[i])) == 0){
-      MissingDataLevel <- strsplit(strsplit(outFiles[i], "_")[[1]][2], "info.")[[1]][2]
-      whichModel <- strsplit(outFiles[i], "_")[[1]][3]
-      SNPdataset <- ReadSNP(vFiles[grep(MissingDataLevel, vFiles)], fileFormat="phy", extralinestoskip=1)
-      VariableSites <- sum(SNPdataset$nsites)
-      numberLoci <- SNPdataset$nloci
-    }
-    alignmentPatterns <- gsub("\\D", "", system(paste("grep 'distinct alignment patterns'", outFiles[i]), intern=T))
-    Missing <-gsub("[A-Za-z:]+|[%]$", "", system(paste("grep 'Proportion of gaps and completely undetermined characters in this alignment:'", outFiles[i]), intern=T), perl=T)
-    BootstrapTime <- strsplit(system(paste("grep 'Overall Time for '", outFiles[i]), intern=T), split="[A-Za-z:]+|[%]$", perl=T)[[1]][6]
-    Likelihood <- strsplit(system(paste("grep 'Final ML Optimization Likelihood:'", outFiles[i]), intern=T), split="[A-Za-z:]+|[%]$", perl=T)[[1]][5]
-    #Alpha <- gsub("[alpha: ]", "", system(paste("grep alpha: ", outFiles[i]), intern=T), perl=T)
-    Alpha <- "0"
-	TreeLength <- gsub("Tree-Length: ", "", system(paste("grep Tree-Length: ", outFiles[i]), intern=T), fixed=T)
-    results[i,] <- c(MissingDataLevel, whichModel, numberLoci, VariableSites, alignmentPatterns, Missing, BootstrapTime, Likelihood, Alpha, TreeLength)
-  }
-  results <- data.frame(results, stringsAsFactors=FALSE)
-  colnames(results) <- c("Level", "Model", "NumberLoci", "VariableSites", "AlignmentPatterns", "MissingData", "BootstrapTime", "Likelihood", "Alpha", "TreeLength")
-  options(digits=10)
-  results$Level <- as.factor(results$Level)
-  results$Model <- as.factor(results$Model)
-  results$NumberLoci <- as.numeric(results$NumberLoci)
-  results$VariableSites <- as.numeric(results$VariableSites)
-  results$AlignmentPatterns <- as.numeric(results$AlignmentPatterns)
-  results$MissingData <- as.numeric(results$MissingData)
-  results$BootstrapTime <- as.numeric(results$BootstrapTime)
-  results$Likelihood <- as.numeric(results$Likelihood)
-  results$Alpha <- as.numeric(results$Alpha)
-  results$TreeLength <- as.numeric(results$TreeLength)
-  setwd(startingDir)
-  return(results)
-}
 
-GetRAxMLStatsPostAnalysis2 <- function(workingDirectoryOfResults) {
+GetRAxMLStatsPostAnalysis <- function(workingDirectoryOfResults) {
   startingDir <- getwd()
   setwd(workingDirectoryOfResults)
   vFiles <- system(paste("ls s*noAmbigs.phy"), intern=T)
