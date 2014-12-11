@@ -615,6 +615,30 @@ GetTime <- function(RAxML_infofile){
   return(as.numeric(secs))
 }
 
+CreateTimeMatrix <- function(infoFiles){
+## Creates a matrix of file names that corresponds to amount of missing data and the models. 
+  missingDataTypes <- sapply(infoFiles, getMissingDataAmount)
+  analy <- sapply(infoFiles, GetAnalysis)
+  runs <- unique(analy)
+  timeMatrix <- matrix(nrow=length(unique(missingDataTypes)), ncol=length(runs))
+  rownames(timeMatrix) <- paste("s", unique(missingDataTypes), sep="")
+  colnames(timeMatrix) <- runs
+  for(row in rownames(timeMatrix)) {
+    for(col in colnames(timeMatrix)){
+      if(col == "full")
+        whichInfoFile <- infoFiles[grep(paste0(col, "_out_", row, "full"), infoFiles)]
+      if(col != "full")
+        whichInfoFile <- infoFiles[grep(paste0(col, "_out_", row, "noAmbigs"), infoFiles)]      
+      timeMatrix[row,col] <- GetTime(whichInfoFile)
+    }
+  }
+  return(as.data.frame(treeMatrix, stringsAsFactors=FALSE))
+}
+
+
+
+
+
 GetLinesToSkip <- function(file){
   return(length(suppressWarnings(system(paste("grep 'ID:' ", file, sep=""), intern=TRUE))))
 }

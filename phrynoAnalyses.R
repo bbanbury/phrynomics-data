@@ -368,7 +368,8 @@ dev.off()
 
 #  Figure 7 -- Time
 
-
+setwd(mainDir)
+infoFiles <- system("ls RAxML_info*", intern=TRUE)
 
 
 
