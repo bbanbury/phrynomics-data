@@ -370,7 +370,28 @@ dev.off()
 
 setwd(mainDir)
 infoFiles <- system("ls RAxML_info*", intern=TRUE)
-
+infoFiles <- infoFiles[-grep("nonasc", infoFiles)]
+timeMatrix <- CreateTimeMatrix(infoFiles)
+setwd(FigDir)
+pdf(file="Figure7.pdf", width=5, height=5)
+cols <- rainbow(dim(timeMatrix)[2])
+plot(rep(orderedLevels, dim(timeMatrix)[2]), unlist(timeMatrix), type="n", ylab="Hours", xlab="Dataset", axes=FALSE)
+axis(side=2)
+axis(side=1, at=orderedLevels, labels=paste0("s", orderedLevels))
+box()
+index <- 0
+title(main="Time")
+for(col in colnames(timeMatrix)){
+  index <- index+1
+  for(i in sequence(length(orderToGo)-1)){
+    dataToUse <- which(orderToGo[i] == rownames(timeMatrix))
+    nextDataToUse <- which(orderToGo[i+1] == rownames(timeMatrix))
+    segments(orderedLevels[i], timeMatrix[dataToUse, col], orderedLevels[i+1], timeMatrix[nextDataToUse, col], col=cols[index])
+  }
+}
+legend("topright", legend=colnames(timeMatrix), col=cols, lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
+dev.off()
+write.table(timeMatrix, "timeTable.txt", quote=FALSE, sep=" & ")
 
 
 #  Figure 8 was made by hand
