@@ -327,75 +327,6 @@ dev.off()
 
 
 
-#  Make Figure 5. Mean branch length error (%)
-
-setwd(FigDir)
-pdf(file="Figure5.pdf", width=8.5, height=5)
-lewis.BLdiff <- list()
-for(i in sequence(length(fulllewis.branchComp))){
-  lewis.BLdiff[[i]] <- GetJustTipBLError(fulllewis.branchComp[[i]])
-  names(lewis.BLdiff)[[i]] <- names(fulllewis.branchComp)[[i]]
-}
-stam.BLdiff <- list()
-for(i in sequence(length(fullstam.branchComp))){
-  stam.BLdiff[[i]] <- GetJustTipBLError(fullstam.branchComp[[i]])
-  names(stam.BLdiff)[[i]] <- names(fullstam.branchComp)[[i]]
-}
-mean.var.data <- NULL
-for(lewstam in sequence(2)){
-  if(lewstam == 1){
-    taxon.BLdiff <- lewis.BLdiff
-    anal <- "lewis"
-  }
-  if(lewstam == 2){
-    taxon.BLdiff <- stam.BLdiff
-    anal <- "stam"
-  }
-  for(i in sequence(length(orderToGo))){
-    whichData <- orderToGo[i]
-    if(length(which(names(taxon.BLdiff) == whichData)) == 0)
-      data4 <- rep(NA, 5)
-    else {
-      data1 <- taxon.BLdiff[[which(names(taxon.BLdiff) == whichData)]]
-      data2 <- rep("OG", length(data1))
-      data2[grep(pattern="PH", names(dataOverlap[[which(names(dataOverlap) == whichData)]]))] <- "PH"
-      data3 <- data.frame(data1, data2)
-      OGmean <- mean(data3[which(data3[,2] == "OG"),1])
-      OGvar <- var(data3[which(data3[,2] == "OG"),1])
-      PHmean <- mean(data3[which(data3[,2] == "PH"),1])
-      PHvar <- var(data3[which(data3[,2] == "PH"),1])
-      data4 <- c(anal, whichData, OGmean, OGvar, PHmean, PHvar)
-    }
-    mean.var.data <- rbind(mean.var.data, data4)
-  }
-}
-colnames(mean.var.data) <- c("anal", "whichData", "OGmean", "OGvar", "PHmean", "PHvar")
-mean.var.data <- as.data.frame(mean.var.data, row.names=1:28, stringsAsFactors=FALSE)
-for(i in 3:6){
-  mean.var.data[,i] <- as.numeric(mean.var.data[,i])
-}
-mean.var.data <- mean.var.data[-which(mean.var.data$whichData == "s70"),]
-q <- sequence(length(unique(mean.var.data$whichData)))  
-par(mar=c(5,5,2,5))
-plot(rep(q, 4), c(mean.var.data$OGmean, mean.var.data$PHmean), type="n", ylab="mean", xlab="", axes=FALSE)
-axis(side=2)
-axis(side=1, at=q, labels=orderToGo[-which(orderToGo == "s70")])
-box()
-abline(0, 0)
-abline(0, 0, lty=2, col="gray")
-for(i in sequence(length(q)-1)){
-  segments(i, mean.var.data[mean.var.data$anal == "lewis",][i,3], i+1, mean.var.data[mean.var.data$anal == "lewis",][i+1,3], col="gray", lty=1)
-  segments(i, mean.var.data[mean.var.data$anal == "lewis",][i,5], i+1, mean.var.data[mean.var.data$anal == "lewis",][i+1,5], col="black", lty=1)
-}
-for(i in sequence(length(q)-1)){
-  segments(i, mean.var.data[mean.var.data$anal == "stam",][i,3], i+1, mean.var.data[mean.var.data$anal == "stam",][i+1,3], col="gray", lty=1)
-  segments(i, mean.var.data[mean.var.data$anal == "stam",][i,5], i+1, mean.var.data[mean.var.data$anal == "stam",][i+1,5], col="black", lty=1)
-points(q, mean.var.data[mean.var.data$anal == "lewis",]$OGmean, col="gray", pch=21, bg="white")
-points(q, mean.var.data[mean.var.data$anal == "lewis",]$PHmean, col="black", pch=21, bg="white")
-points(q, mean.var.data[mean.var.data$anal == "stam",]$OGmean, col="gray", pch=21, bg="black")
-points(q, mean.var.data[mean.var.data$anal == "stam",]$PHmean, col="black", pch=21, bg="black")
-}
-dev.off()
 
 
 #  Make Figure 6. Scatterplot branch length support 
@@ -436,39 +367,6 @@ dev.off()
 
 
 
-
-
-#  Make Figure 7 a-b. Average RF distances among replicate runs.
-#  Figure 7c was made using Mesquite. 
-
-setwd(FigDir)
-MLRFdistMatrix <- GetRFmatrix("RAxML")
-BIRFdistMatrix <- GetRFmatrix("MrBayes")
-RFdistMatrix <- list(ML=MLRFdistMatrix, BI=BIRFdistMatrix)
-pdf(file="Figure7a-b.pdf", width=5, height=8.5)
-layout(matrix(1:2, nrow=2, byrow=TRUE), respect=TRUE)
-titles <- c("Ave. RF - 20 Independent Runs", "Ave. RF - 20 Posterior Trees")
-for(dist in sequence(length(RFdistMatrix))){
-  plot(as.numeric(RFdistMatrix[[dist]][,3]), as.numeric(RFdistMatrix[[dist]][,4]), xlab="dataset", ylab="Average RF", xaxt="n", type="n", ylim=c(0,130))
-  title(main= titles[[dist]])
-  cols <- c("lightblue", "blue")
-  pchs <- c(15, 19)
-  axis(side=1, at=1:14, labels=RFdistMatrix[[dist]][1:14, 2])
-  ascsub <- RFdistMatrix[[dist]][which(RFdistMatrix[[dist]][,1] == "ASC"),]
-  gtrsub <- RFdistMatrix[[dist]][which(RFdistMatrix[[dist]][,1] == "GTR"),]
-  points(as.numeric(ascsub[,3]), as.numeric(ascsub[,4]), col=cols[1], pch=pchs[[dist]])
-  points(as.numeric(gtrsub[,3]), as.numeric(gtrsub[,4]), col=cols[2], pch=pchs[[dist]])
-  for(i in 1:13){
-    segments(as.numeric(ascsub[i,3]), as.numeric(ascsub[i,4]), as.numeric(ascsub[i+1,3]), as.numeric(ascsub[i+1,4]), col=cols[1])
-    segments(as.numeric(gtrsub[i,3]), as.numeric(gtrsub[i,4]), as.numeric(gtrsub[i+1,3]), as.numeric(gtrsub[i+1,4]), col=cols[2])
-  }
-  legtxt <- c("ASC", "GTR")
-  legcolors <- c(cols[1], cols[2])
-  legend("topleft", legend=legtxt, col=legcolors, lwd=2, merge = TRUE, bty="n", xjust=1, inset=0.02, cex=0.75, title=expression(underline("Model"))) 
-}
-dev.off()
-
-#maybe add here how fig 7c was made? With scripts for exporting newick trees
 
 
 #  Figure 8 was made by hand
