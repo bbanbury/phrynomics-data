@@ -632,7 +632,7 @@ CreateTimeMatrix <- function(infoFiles){
       timeMatrix[row,col] <- GetTime(whichInfoFile)
     }
   }
-  return(as.data.frame(treeMatrix, stringsAsFactors=FALSE))
+  return(as.data.frame(timeMatrix, stringsAsFactors=FALSE))
 }
 
 
