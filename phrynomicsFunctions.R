@@ -611,7 +611,7 @@ GetRAxMLStatsPostAnalysis <- function(workingDirectoryOfResults) {
 GetTime <- function(RAxML_infofile){
   line <- system(paste("grep 'ML search took '", RAxML_infofile), intern=TRUE)[1]
   line <- gsub("[a-zA-Z]", "", line)
-  secs <- strsplit(line, split=" +")[[1]][2]
+  secs <- strsplit(line, split=" +")[[1]][3]
   return(as.numeric(secs))
 }
 
@@ -701,7 +701,7 @@ GetMrBayesStatsPostAnalysis <- function(workingDirectoryOfResults){
 }
 
 
-CheckInvocations <- function(workingDir){
+CheckInvocations <- function(workingDir){  #broken with new models
 # only works for RAxML
 # read in info filenames - scrape out model, dataset, and rep from name
 # then grep for invocation line and scrape model and dataset to make sure it matches
@@ -711,17 +711,12 @@ CheckInvocations <- function(workingDir){
   infoFiles <- system("ls *info*", intern=T)
   for(i in sequence(length(infoFiles))){
     modLine <- strsplit(infoFiles[i], "[.,_]")[[1]]
-    if(any(grep("ASC", modLine)))
-      mod1 <- "ASC_GTRCAT"
-    else 
-      mod1 <- "GTRCAT"
-    dat1 <- strsplit(infoFiles[i], "[.,_]")[[1]][grep("\\d+", strsplit(infoFiles[i], "[.,_]")[[1]])[1]]
-    dat1 <- gsub("noAmbigs", "", dat1)
-    run <- strsplit(infoFiles[i], "[.,_]")[[1]][grep("\\d+", strsplit(infoFiles[i], "[.,_]")[[1]])[2]]
+    mod1 <- modLine[3]
+    dat1 <- getMissingDataAmount(infoFiles[i])
     invocLine <- strsplit(system(paste("grep -A 2 'RAxML was called as follows:'", infoFiles[i]), intern=TRUE)[3], split=" ")[[1]]
-    mod2 <- invocLine[grep("GTR", invocLine)[1]]
+    mod2 <- invocLine[(grep("-s", invocLine)[1] +1)]
     seeds <- c(seeds, invocLine[grep("^\\d\\d\\d+$", invocLine)][invocLine[grep("^\\d\\d\\d+$", invocLine)] != "1000"])
-    dat2 <- gsub("noAmbigs.snps", "", invocLine[5])
+    dat2 <- getMissingDataAmount(invocLine[5])
     if(mod1 != mod2)  
       print(paste("model invocation is wrong:", infoFiles[i]))
     if(dat1 != dat2)

@@ -5,11 +5,9 @@
 ##                                            ##
 ##  ----------------------------------------  ##
 
-
 library(phangorn)
 library(phrynomics)
 source("~/phrynomics-data/trunk/phrynomicsFunctions.R")
-
 
 mainDir <- "/Users/Barb/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/cResults"
 FigDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/TablesFigures"
@@ -310,7 +308,7 @@ par(mar = c(1,0,1,0))
 layout(matrix(1:7, nrow=1, byrow=TRUE), respect=TRUE)
 for(fig in treeFigDatasets){
   whichAnalysis <- fig 
-  print(whichAnalysis)
+  #print(whichAnalysis)
   dataToUse <- which(rownames(treeMatrix) == fig)
   BL.AllTrees <- fullstam.branchComp
   tree1 <- assTrees(treeMatrix[dataToUse, grep("full", colnames(treeMatrix))], RAxML.TreeList)[[1]]
@@ -320,7 +318,7 @@ for(fig in treeFigDatasets){
   edgeColors <- BL.AllTrees[[dataToUse]]$edgeColor2
   if(length(edgeColors[which(is.na(edgeColors))]) > 0)
     edgeColors[which(is.na(edgeColors))] <- rep("gray", length(which(is.na(edgeColors))))
-  print(paste(names(BL.AllTrees)[[dataToUse]], mean(BL.AllTrees[[dataToUse]]$relativeBLdiff, na.rm=TRUE)))
+  #print(paste(names(BL.AllTrees)[[dataToUse]], mean(BL.AllTrees[[dataToUse]]$relativeBLdiff, na.rm=TRUE)))
   plot(tree1, edge.lty=BL.AllTrees[[dataToUse]]$edgelty, edge.color= edgeColors, cex=0.5, edge.width=1, show.tip.label=FALSE)
   if(fig == "s5")
     legend("bottomleft", legend=legtxt, col=legcolors, lty=rep(1,7), lwd=1, merge = TRUE, bty="n", xjust=1, inset=0.02, cex=0.75, title=expression(underline("Branchlength Difference")))
@@ -359,8 +357,6 @@ for(whichAnalysis in focalDatasets[c(3,1)]){
     linmod <- lm(corr.supports[[plotty]] ~ supports[[plotty]])
     abline(linmod, lty=2)
     text(x=80, y=10, paste("r =", round(cor(corr.supports[[plotty]], supports[[plotty]]), digits=2)))
-
-
   }
 }
 dev.off()
@@ -391,7 +387,6 @@ for(col in colnames(timeMatrix)){
 }
 legend("topright", legend=colnames(timeMatrix), col=cols, lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
 dev.off()
-write.table(timeMatrix, "timeTable.txt", quote=FALSE, sep=" & ")
 
 
 #  Figure 8 was made by hand
@@ -404,16 +399,59 @@ write.table(timeMatrix, "timeTable.txt", quote=FALSE, sep=" & ")
 
 
 
+##  ----------------------------------------  ##
+##            Supplement Figures              ##
+##  ----------------------------------------  ##
+
+
+#  Supplement Trees (14 datasets * 4 analyses)
+
+setwd(FigDir)
+pdf(file="SupplementTrees.pdf", width=8.5, height=11)
+analyses <- unique(sapply(names(RAxML.TreeList), GetAnalysis, USE.NAMES=FALSE))
+whichFig <- 0
+for(whichAnal in analyses){
+  red.trees <- RAxML.TreeList[grep(whichAnal, names(RAxML.TreeList))]
+  if(whichAnal == "full")
+    rr <- "All Sites"
+  if(whichAnal == "nonasc")
+    rr <- "Uncorrected"
+  if(whichAnal == "lewis")
+    rr <- "Conditional likelihood"
+  if(whichAnal == "stam")
+    rr <- "Reconstituted DNA"
+  for(i in sequence(length(orderToGo))){
+    whichFig <- whichFig+1
+    nameToGrep <- paste0(whichAnal, "_out_", paste0(orderToGo[i], "noAmbigs"))
+    if(whichAnal == "full")
+      nameToGrep <- paste0(whichAnal, "_out_", paste0(orderToGo[i], "full"))
+    tree <- RAxML.TreeList[[grep(nameToGrep, names(RAxML.TreeList))]]
+    plot(tree, cex=0.5, edge.width=1, show.tip.label=TRUE, show.node.label=TRUE)
+    add.scale.bar(cex = 0.7, font = 2, col = "black")
+    bquote <- bquote(bold("Supplemental Figure S" * .(as.character(whichFig)) * ".  ") * .(as.character(rr)) * " RAxML tree for dataset " * .(as.character(orderToGo[i])) * ".")
+    mtext(bquote, side=3, cex=0.75, adj=c(0))
+  }
+}
+dev.off()
+
+write.nexus(RAxML.TreeList, file="Trees.nex")
+
+
+
+##  ----------------------------------------  ##
+##         End Supplement Figures             ##
+##  ----------------------------------------  ##
+
+
 
 
 ##  ----------------------------------------  ##
 ##      Double check RAxML Invocations        ##
 ##  ----------------------------------------  ##
 
-if(analysis == "RAxML"){
-  systemCallSeeds <- CheckInvocations(getwd())
-  CheckSeeds(systemCallSeeds)
-}
+# setwd(mainDir)
+# systemCallSeeds <- CheckInvocations(getwd())
+# CheckSeeds(systemCallSeeds)
 
 
 ##  ----------------------------------------  ##
