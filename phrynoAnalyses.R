@@ -82,7 +82,7 @@ orderToGo <- AllOrder[AllOrder %in% whichDatasets]  #datasets of sequence that e
 focalDatasets <- c("s5", "s25", "s50")
 treeFigDatasets <- c("s5", "s15", "s25", "s35", "s45", "s55", "s65")
 
-#save(fullfiles, snpfiles, RAxML.trees, RAxML.TreeList, ML.results, fullnonASC.branchComp, fulllewis.branchComp, fullstam.branchComp, orderedLevels, orderToGo, focalDatasets, file="phrynoResults.Rdata")
+save(fullfiles, snpfiles, RAxML.trees, RAxML.TreeList, treeMatrix, ML.results, fullnonASC.branchComp, fulllewis.branchComp, fullstam.branchComp, orderedLevels, orderToGo, focalDatasets, treeFigDatasets, file="phrynoResults.Rdata")
 
 
 
@@ -100,7 +100,7 @@ treeFigDatasets <- c("s5", "s15", "s25", "s35", "s45", "s55", "s65")
 ##  ----------------------------------------  ##
 
 #  If you want to start from here, you can load up the workspace with all the data.
-#load("phrynoResults.Rdata")
+load("phrynoResults.Rdata")
 
 #  Table 1 was made by hand
 
