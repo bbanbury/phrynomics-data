@@ -69,6 +69,7 @@ for(i in sequence(dim(full.stam.treeMatrix)[1])) {
 
 
 
+
 #  Create global objects for tables and figs to be made
 
 levels <-NULL
@@ -188,7 +189,26 @@ setwd(FigDir)
 write.table(table3, file="table3.txt", quote=FALSE, sep=" & ")
  
 
-  
+
+# Table 4. RF distances. 
+
+RFs <- cbind(full.nonASC.treeMatrix$symmetric.difference, full.lewis.treeMatrix$symmetric.difference, full.stam.treeMatrix$symmetric.difference )
+rownames(RFs) <- rownames(full.lewis.treeMatrix)
+colnames(RFs) <- c("nonasc", "lewis", "stam") 
+setwd(FigDir)
+write.table(RFs, file="RFs.txt")
+
+# RF dists between full comparisons
+RFdist <- rep(NA, 13)
+fullTrees <- RAxML.TreeList[grep("full", names(RAxML.TreeList))]
+for(i in sequence(length(orderToGo)-1)){
+  tree1 <- fullTrees[[grep(paste0(orderToGo[i], "full"), names(fullTrees))]]
+  tree2 <- fullTrees[[grep(paste0(orderToGo[i+1], "full"), names(fullTrees))]]
+  RFdist[i] <- phangorn::treedist(tree1, tree2)[[1]]
+  names(RFdist)[i] <- paste0(orderToGo[i], "-", orderToGo[i+1])
+}
+write(RFdist, file="fullRFdists.txt", col.names)
+
 
 ##  ----------------------------------------  ##
 ##               End Make Tables              ##
@@ -387,6 +407,26 @@ for(col in colnames(timeMatrix)){
 }
 legend("topright", legend=colnames(timeMatrix), col=cols, lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
 dev.off()
+
+
+#  Figure 8. RF distances.
+
+setwd(FigDir)
+pdf(file="Figure8.pdf", width=5, height=5)
+cols <- rainbow(dim(RFs)[2])
+index <- 0
+plot(rep(levels, dim(RFs)[2]), unlist(RFs), type="n")
+for(col in colnames(RFs)){
+  index <- index+1
+  for(i in sequence(length(orderToGo)-1)){
+    dataToUse <- which(orderToGo[i] == rownames(RFs))
+    nextDataToUse <- which(orderToGo[i+1] == rownames(RFs))
+    segments(orderedLevels[i], RFs[dataToUse, col], orderedLevels[i+1], RFs[nextDataToUse, col], col=cols[index])
+  }
+}
+legend("topleft", legend=colnames(RFs), col=cols, lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
+dev.off()
+
 
 
 #  Figure 8 was made by hand
