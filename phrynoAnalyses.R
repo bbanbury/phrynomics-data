@@ -382,7 +382,7 @@ for(whichAnalysis in focalDatasets[c(3,1)]){
 dev.off()
 
 
-#  Figure 7 -- Time
+#  Figure 7a. -- Time
 
 setwd(mainDir)
 infoFiles <- system("ls RAxML_info*", intern=TRUE)
@@ -409,7 +409,34 @@ legend("topright", legend=colnames(timeMatrix), col=cols, lwd=1, merge=TRUE, bty
 dev.off()
 
 
-#  Figure 8. RF distances.
+#  Figure 7b. -- Site Patterns
+setwd(mainDir)
+infoFiles <- system("ls RAxML_info*", intern=TRUE)
+spMatrix <- CreateSitePatternMatrix(infoFiles)
+setwd(FigDir)
+pdf(file="Figure7b.pdf", width=5, height=5)
+cols <- rainbow(dim(spMatrix)[2])
+plot(rep(orderedLevels, dim(spMatrix)[2]), unlist(spMatrix), type="n", ylab="Site Patterns", xlab="Dataset", axes=FALSE)
+axis(side=2)
+axis(side=1, at=orderedLevels, labels=paste0("s", orderedLevels))
+box()
+index <- 0
+title(main="")
+for(col in colnames(spMatrix)){
+  index <- index+1
+  for(i in sequence(length(orderToGo)-1)){
+    dataToUse <- which(orderToGo[i] == rownames(spMatrix))
+    nextDataToUse <- which(orderToGo[i+1] == rownames(spMatrix))
+    segments(orderedLevels[i], spMatrix[dataToUse, col], orderedLevels[i+1], spMatrix[nextDataToUse, col], col=cols[index])
+  }
+}
+legend("topright", legend=colnames(spMatrix), col=cols, lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
+dev.off()
+
+
+
+
+#  Figure 8. -- RF distances.
 
 setwd(FigDir)
 pdf(file="Figure8.pdf", width=5, height=5)

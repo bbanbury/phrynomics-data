@@ -635,7 +635,32 @@ CreateTimeMatrix <- function(infoFiles){
   return(as.data.frame(timeMatrix, stringsAsFactors=FALSE))
 }
 
+GetSitePattern <- function(RAxML_infofile){
+  line <- system(paste("grep 'Alignment Patterns: '", RAxML_infofile), intern=TRUE)[1]
+  line <- gsub("Alignment Patterns: ", "", line)
+  return(as.numeric(line))
+}
 
+
+CreateSitePatternMatrix <- function(infoFiles){
+## Creates a matrix of file names that corresponds to amount of missing data and the models. 
+  missingDataTypes <- sapply(infoFiles, getMissingDataAmount)
+  analy <- sapply(infoFiles, GetAnalysis)
+  runs <- unique(analy)
+  spMatrix <- matrix(nrow=length(unique(missingDataTypes)), ncol=length(runs))
+  rownames(spMatrix) <- paste("s", unique(missingDataTypes), sep="")
+  colnames(spMatrix) <- runs
+  for(row in rownames(spMatrix)) {
+    for(col in colnames(spMatrix)){
+      if(col == "full")
+        whichInfoFile <- infoFiles[grep(paste0(col, "_out_", row, "full"), infoFiles)]
+      if(col != "full")
+        whichInfoFile <- infoFiles[grep(paste0(col, "_out_", row, "noAmbigs"), infoFiles)]      
+      spMatrix[row,col] <- GetSitePattern(whichInfoFile)
+    }
+  }
+  return(as.data.frame(spMatrix, stringsAsFactors=FALSE))
+}
 
 
 
