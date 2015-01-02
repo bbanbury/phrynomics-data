@@ -432,7 +432,7 @@ for(col in colnames(spMatrix)){
 }
 legend("topright", legend=colnames(spMatrix), col=cols, lwd=1, merge=TRUE, bty="n", xjust=1, inset=0.02, cex=1) 
 dev.off()
-
+write.table(spMatrix, file="SitePatterns.txt")
 
 
 
