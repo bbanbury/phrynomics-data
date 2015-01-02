@@ -13,4 +13,8 @@ The phrynomicsFunctions.R file includes many custom functions that do not belong
 
 The file phrynoSetup.R is the R script that we used to manipulate the phrynosoma SNP datasets we got out of pyRad.  This file includes (commented out) shell and perl scripts for running all our analyses on the UW cluster.  
 
+The files within Rscripts directory and files master.sh and sim.ctl were used for simulation. sim.ctl is the control file for the MCCOAL program in BPP, and contains all of the parameters for the simulated datasets.  The master.sh file is a hacky shell script that pieces together all of the components of the simulations, only extracting off the important pieces (such as total tree lengths). This script calls on MCCOAL and the Rscripts.  
 
+The phrynoAnalyses.R file was used for all post-analyses scraping of results files.  This file contains scripts to remake many of the tables and figures found in our paper.  
+
+Finally, the phrynoResults.Rdata file is an R-formatted data file that can be loaded into an R workspace and used to create the tables and figures.  It contains the full and snp only data files for all 14 minimum individual datasets, the RAxML trees, and branch length comparison tables. 
