@@ -9,8 +9,8 @@ library(phangorn)
 library(phrynomics)
 source("~/phrynomics-data/trunk/phrynomicsFunctions.R")
 
-mainDir <- "/Users/Barb/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/cResults"
-FigDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/TablesFigures"
+mainDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/DataForPaper/cResults-k80"
+FigDir <- "~/Dropbox/UWstuff/phrynomics/Analyses/TablesFigures-k80"
 
 
 
@@ -185,7 +185,6 @@ for(i in sequence(dim(table3)[1])){
     table3[i,col] <- paste(threeVals, collapse="/")
   }
 }
-setwd(FigDir)
 write.table(table3, file="table3.txt", quote=FALSE, sep=" & ")
  
 
@@ -195,8 +194,8 @@ write.table(table3, file="table3.txt", quote=FALSE, sep=" & ")
 RFs <- cbind(full.nonASC.treeMatrix$symmetric.difference, full.lewis.treeMatrix$symmetric.difference, full.stam.treeMatrix$symmetric.difference )
 rownames(RFs) <- rownames(full.lewis.treeMatrix)
 colnames(RFs) <- c("nonasc", "lewis", "stam") 
-setwd(FigDir)
 write.table(RFs, file="RFs.txt")
+
 
 # RF dists between full comparisons
 RFdist <- rep(NA, 13)
@@ -207,7 +206,7 @@ for(i in sequence(length(orderToGo)-1)){
   RFdist[i] <- phangorn::treedist(tree1, tree2)[[1]]
   names(RFdist)[i] <- paste0(orderToGo[i], "-", orderToGo[i+1])
 }
-write(RFdist, file="fullRFdists.txt", col.names)
+write(RFdist, file="fullRFdists.txt")
 
 
 ##  ----------------------------------------  ##
